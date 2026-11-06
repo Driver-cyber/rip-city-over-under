@@ -1,9 +1,11 @@
-import { STATS, parseAverages, buildLines, gradeFromSummary } from "./lines.js";
+import { STATS, parseAverages, averagesFromBoxes, buildLines, gradeFromSummary } from "./lines.js";
 
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 const AVERAGES = "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byathlete?limit=600";
 const LINES_AHEAD_MS = 30 * 3600e3; // post lines once a game is within 30 hours
 const MAX_GRADES_PER_RUN = 5;
+const BOX_GAMES = 10; // recent games per team for the backup averages
+const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15";
 
 export default {
   async fetch(req, env) {
@@ -174,15 +176,17 @@ async function state(env, who) {
 
 /* ---------- sync: schedule, lines, grading ---------- */
 async function getJSON(url) {
-  const r = await fetch(url, { headers: { accept: "application/json" }, cf: { cacheTtl: 60 } });
-  if (!r.ok) throw new Error(`${r.status} from ${url}`);
+  const r = await fetch(url, { headers: { accept: "application/json", "user-agent": UA } });
+  if (!r.ok) throw new Error(`ESPN answered ${r.status} for ${new URL(url).pathname}`);
   return r.json();
 }
 
 export async function sync(env) {
   const log = [];
   // 1. Schedule: add new games, follow reschedules.
-  const sched = await getJSON(`${ESPN}/teams/por/schedule`);
+  let sched;
+  try { sched = await getJSON(`${ESPN}/teams/por/schedule`); }
+  catch (e) { return [`schedule: ${e.message}`]; }
   const stmts = [];
   const finals = new Set();
   for (const e of sched.events || []) {
@@ -204,29 +208,46 @@ export async function sync(env) {
   // 2. Lines for the next game, from season averages, skipping players listed out.
   const due = games.filter(g => !g.questions?.length && Date.parse(g.tip) > t && Date.parse(g.tip) - t < LINES_AHEAD_MS);
   if (due.length) {
-    const averages = parseAverages(await getJSON(AVERAGES));
-    for (const g of due) {
+    let averages = null;
+    try { averages = parseAverages(await getJSON(env.AVERAGES_URL || AVERAGES)); }
+    catch (e) { log.push(`season averages: ${e.message}; using recent box scores instead`); }
+    for (const g of due) try {
+      const pool = averages || await recentAverages(["POR", g.opp]);
       let out = [];
       try {
         const s = await getJSON(`${ESPN}/summary?event=${g.id}`);
         out = (s.injuries || []).flatMap(t => t.injuries || []).filter(i => /out/i.test(i.status || "")).map(i => i.athlete?.displayName);
       } catch (e) { log.push(`injuries for ${g.id}: ${e.message}`); }
-      const por = buildLines(averages, "POR", { out });
-      const opp = buildLines(averages, g.opp, { out, opponent: true, startId: por.length + 1 });
+      const por = buildLines(pool, "POR", { out });
+      const opp = buildLines(pool, g.opp, { out, opponent: true, startId: por.length + 1 });
       if (por.length + opp.length < 4) { log.push(`lines for ${g.id}: not enough season data yet`); continue; }
       await env.DB.prepare("UPDATE games SET questions = ?, updated_at = ? WHERE id = ? AND questions IS NULL")
         .bind(JSON.stringify(por.concat(opp)), now(), g.id).run();
-      log.push(`lines for ${g.id} vs ${g.opp}: ${por.length + opp.length} posted`);
-    }
+      log.push(`lines vs ${g.opp}: ${por.length + opp.length} posted`);
+    } catch (e) { log.push(`lines vs ${g.opp}: ${e.message}`); }
   }
 
   // 3. Grade finished games that have lines and no final yet.
   const toGrade = games.filter(g => g.questions?.length && !g.final && finals.has(g.id)).slice(0, MAX_GRADES_PER_RUN);
-  for (const g of toGrade) {
+  for (const g of toGrade) try {
     const final = gradeFromSummary(await getJSON(`${ESPN}/summary?event=${g.id}`), g.questions, g.opp);
-    if (!final) { log.push(`grade ${g.id}: box score not final yet`); continue; }
+    if (!final) { log.push(`grade vs ${g.opp}: box score not final yet`); continue; }
     await env.DB.prepare("UPDATE games SET final = ?, updated_at = ? WHERE id = ? AND final IS NULL").bind(JSON.stringify(final), now(), g.id).run();
-    log.push(`graded ${g.id}: POR ${final.porScore}–${final.oppScore} ${g.opp}`);
-  }
+    log.push(`graded vs ${g.opp}: POR ${final.porScore}–${final.oppScore}`);
+  } catch (e) { log.push(`grade vs ${g.opp}: ${e.message}`); }
+  if (log.length === 1) log.push("nothing else to do right now");
   return log;
+}
+
+// Averages from each team's last few finished games, for when ESPN's
+// league-wide stats page can't be reached.
+async function recentAverages(teams) {
+  const out = [];
+  for (const team of teams) {
+    const sched = await getJSON(`${ESPN}/teams/${team.toLowerCase()}/schedule`);
+    const ids = (sched.events || []).filter(e => e.competitions?.[0]?.status?.type?.completed).map(e => e.id).slice(-BOX_GAMES);
+    const summaries = await Promise.all(ids.map(id => getJSON(`${ESPN}/summary?event=${id}`).catch(() => null)));
+    out.push(...averagesFromBoxes(summaries.filter(Boolean), team));
+  }
+  return out;
 }

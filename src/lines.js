@@ -62,9 +62,10 @@ export function buildLines(averages, team, { out = [], opponent = false, startId
 }
 
 // ESPN summary boxscore -> { "Player Name": {PTS, REB, ...} } for everyone who played.
-export function parseBox(summary) {
+export function parseBox(summary, team) {
   const out = {};
   for (const t of summary?.boxscore?.players || []) {
+    if (team && t.team?.abbreviation !== team) continue;
     const st = t.statistics?.[0];
     if (!st) continue;
     for (const a of st.athletes || []) {
@@ -72,7 +73,8 @@ export function parseBox(summary) {
       const v = {};
       st.keys.forEach((k, i) => {
         const raw = a.stats[i];
-        if (k === "points") v.PTS = +raw;
+        if (k === "minutes") v.MIN = +raw || 0;
+        else if (k === "points") v.PTS = +raw;
         else if (k === "rebounds") v.REB = +raw;
         else if (k === "assists") v.AST = +raw;
         else if (k === "steals") v.STL = +raw;
@@ -83,6 +85,23 @@ export function parseBox(summary) {
     }
   }
   return out;
+}
+
+// Backup for parseAverages: per-game averages from a team's recent box scores.
+export function averagesFromBoxes(summaries, team) {
+  const sum = {};
+  for (const s of summaries) {
+    for (const [name, v] of Object.entries(parseBox(s, team))) {
+      const a = sum[name] ||= { name, team, gp: 0, min: 0, pts: 0, reb: 0, ast: 0, tpm: 0, stl: 0, blk: 0 };
+      a.gp++; a.min += v.MIN || 0; a.pts += v.PTS || 0; a.reb += v.REB || 0; a.ast += v.AST || 0;
+      a.tpm += v["3PM"] || 0; a.stl += v.STL || 0; a.blk += v.BLK || 0;
+    }
+  }
+  return Object.values(sum).map(a => {
+    const r = { name: a.name, team, gp: a.gp };
+    for (const k of ["min", "pts", "reb", "ast", "tpm", "stl", "blk"]) r[k] = a[k] / a.gp;
+    return r;
+  });
 }
 
 // Final result for a game from its ESPN summary, or null if not final yet.

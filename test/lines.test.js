@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseAverages, buildLines, parseBox, gradeFromSummary, markQ, markW } from "../src/lines.js";
+import { parseAverages, averagesFromBoxes, buildLines, parseBox, gradeFromSummary, markQ, markW } from "../src/lines.js";
 
 const fixture = name => JSON.parse(readFileSync(new URL("./fixtures/" + name, import.meta.url)));
 const averages = parseAverages(fixture("averages.json"));
@@ -63,4 +63,13 @@ test("scoring: right +1, wrong -1, on the line 0", () => {
   assert.equal(markQ(undefined, q, { values: { a: 20 } }), null);
   assert.equal(markW("POR", { winner: "POR" }), 1);
   assert.equal(markW("LAL", { winner: "POR" }), -1);
+});
+
+test("backup averages from box scores build lines", () => {
+  const avg = averagesFromBoxes([summary, summary], "POR");
+  assert.ok(avg.every(p => p.team === "POR" && p.gp === 2));
+  const deni = avg.find(p => p.name === "Deni Avdija");
+  assert.equal(deni.pts, parseBox(summary)["Deni Avdija"].PTS);
+  assert.ok(deni.min > 0);
+  assert.equal(buildLines(avg, "POR").length, 6);
 });
