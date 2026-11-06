@@ -197,6 +197,21 @@ html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 .recap div:first-child{border-top:0}
 .recap b{white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.swipe.enter-l{animation:none}}
+
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
+.foot a{color:var(--muted)}
+.cmlink{border:1px solid var(--line);border-radius:999px;padding:8px 14px;text-decoration:none;font-weight:600}
+.cmbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 8px 8px 14px;font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.cmbar a,.cmbar button{color:var(--bg);font-size:13px;font-weight:700;text-transform:none;letter-spacing:0}
+.cmbar button{border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);background:transparent;border-radius:8px;padding:6px 10px}
+.cmbar span{display:flex;gap:12px;align-items:center}
+pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:10px 12px;color:var(--muted)}
+.tools{display:flex;flex-direction:column;gap:10px}
+.trow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--line);font-size:15px}
+.trow:first-child{border-top:0}
+.trow .opp{flex:1;min-width:0}
+.trow .opp small{display:block;color:var(--muted);font-size:13px}
+.trow a{font-size:14px;font-weight:600;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -362,7 +377,7 @@ function homeView(){
     const [, label] = status(f);
     const btn = f.questions?.length
       ? `<a class="cta" href="#game-${f.id}">${locked(f) ? "See everyone's picks" : label === "Picked" ? "Review your picks" : "Make your picks"}</a>`
-      : `<div class="note" style="color:inherit;opacity:.75">Lines go up automatically the day before the game.</div>${S.me?.admin ? `<a class="cta ghost" href="#setup-${f.id}">Post lines now</a>` : ""}`;
+      : `<div class="note" style="color:inherit;opacity:.75">Lines go up automatically the day before the game.</div>${cm() ? `<a class="cta ghost" href="#setup-${f.id}">Post lines now</a>` : ""}`;
     feat = boardHTML(f, btn);
   } else feat = `<div class="card">No games left on the schedule.</div>`;
   const now = Date.now();
@@ -385,8 +400,7 @@ function homeView(){
   </a>
   ${upcoming.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="kicker">Coming up</span><div class="list">${upcoming.map(listRow).join("")}</div></div>` : ""}
   ${recent.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="kicker">Recent</span><div class="list">${recent.map(listRow).join("")}</div></div>` : ""}
-  <a class="note" href="#schedule">Full schedule →</a>
-  ${S.me?.admin ? `<button class="linkbtn" id="syncBtn" type="button">Check ESPN now (schedule, lines, grading)</button>` : ""}`;
+  <div class="foot"><a href="#schedule">Full schedule →</a><a class="cmlink" href="#commish">${cm() ? "Commissioner tools" : "Commissioner"}</a></div>`;
 }
 
 function scheduleView(){ return shell(`<h2>Schedule</h2><div class="list">${S.games.map(listRow).join("")}</div>`, {href:"", label:"Home"}); }
@@ -401,7 +415,7 @@ function gameView(id){
   const total = qs.length + 1, done = (mine.winner ? 1 : 0) + qs.filter(q => mine.q?.[q.id]).length;
   const can = !lk;
   if (qs.length && !lk && S.view === "cards") return cardsView(g);
-  if (!qs.length) return shell(`${boardHTML(g)}<div class="card"><p style="margin:0">Lines for this game go up automatically the day before.</p>${S.me?.admin ? `<p class="note">Or post them yourself.</p><a class="cta" href="#setup-${id}">Post the lines</a>` : ""}</div>`, {href:"", label:"Home"});
+  if (!qs.length) return shell(`${boardHTML(g)}<div class="card"><p style="margin:0">Lines for this game go up automatically the day before.</p>${cm() ? `<p class="note">Or post them yourself.</p><a class="cta" href="#setup-${id}">Post the lines</a>` : ""}</div>`, {href:"", label:"Home"});
 
   const chips = (getPick, m) => lk && players.length ? `<div class="others">${players.map(p => {
       const pk = getPick(p); if (!pk) return `<span class="pickchip">${esc(nameOf(p))}: —</span>`;
@@ -435,14 +449,14 @@ function gameView(id){
 
   const myScore = fin ? scoreGame(uid(), id) : null;
   const head = lk
-    ? `<div class="note">${fin ? (myScore ? `Your game: <b class="num">${signed(myScore.pts)}</b> (${myScore.w}–${myScore.l}${myScore.p ? `–${myScore.p}` : ""})` : "Final.") : "Picks locked at tip-off. Results go up automatically after the game."}${S.me?.admin ? ` <a href="#grade-${id}">${fin ? "Fix final stats" : "Enter final stats"}</a>` : ""}</div>`
+    ? `<div class="note">${fin ? (myScore ? `Your game: <b class="num">${signed(myScore.pts)}</b> (${myScore.w}–${myScore.l}${myScore.p ? `–${myScore.p}` : ""})` : "Final.") : "Picks locked at tip-off. Results go up automatically after the game."}${cm() ? ` <a href="#grade-${id}">${fin ? "Fix final stats" : "Enter final stats"}</a>` : ""}</div>`
     : `<div class="progress"><span class="num">${done}/${total}</span><div class="bar"><i style="width:${done / total * 100}%"></i></div><span class="muted">${others.length ? `${esc(others.map(nameOf).join(", "))} ${others.length > 1 ? "have" : "has"} picked` : "Locks at tip-off"}</span></div>`;
 
   const por = qs.filter(q => q.team === "POR"), opp = qs.filter(q => q.team !== "POR");
   return shell(`${boardHTML(g)}${banner()}${!lk ? viewToggle() : ""}${head}${winCard}
     ${por.length ? `<span class="kicker">Blazers</span>${por.map(qCard).join("")}` : ""}
     ${opp.length ? `<span class="kicker">${esc(g.oppName)}</span>${opp.map(qCard).join("")}` : ""}
-    ${!lk ? `<p class="note">Picks save as you tap. Tap a pick again to clear it. Everyone's picks show here after tip-off.${S.me?.admin ? ` <a href="#setup-${id}">Edit lines</a>` : ""}</p>` : ""}
+    ${!lk ? `<p class="note">Picks save as you tap. Tap a pick again to clear it. Everyone's picks show here after tip-off.${cm() ? ` <a href="#setup-${id}">Edit lines</a>` : ""}</p>` : ""}
     ${lk && !fin ? `<a class="cta ghost" href="#results">See the leaderboard</a>` : ""}`, {href:"", label:"Home"});
 }
 
@@ -650,6 +664,42 @@ addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") { e.preventDefault(); fly(-1); }
 });
 
+
+/* ---------- commissioner mode ---------- */
+const CM_KEY = "ripcity.commish";
+S.commish = (() => { try { return localStorage.getItem(CM_KEY) === "1"; } catch { return false; } })();
+const cm = () => !!(S.me?.admin && S.commish);
+function setCommish(on){ S.commish = on; try { on ? localStorage.setItem(CM_KEY, "1") : localStorage.removeItem(CM_KEY); } catch {} }
+function cmBar(){ return cm() ? `<div class="cmbar">Commissioner mode<span>${route() === "commish" ? "" : `<a href="#commish">Tools</a>`}<button type="button" data-cm="off">Exit</button></span></div>` : ""; }
+
+function commishView(){
+  if (!S.me?.admin) return shell(`<div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Commissioner</span><h2>Commissioner mode</h2></div>
+    <form class="card login" id="unlockForm">
+      <label for="cp">Commissioner passcode</label>
+      <input id="cp" type="password" autocomplete="current-password" required>
+      <div class="err" id="cerr"></div>
+      <button class="cta" type="submit">Unlock</button>
+      <p class="note" style="margin:0">You stay signed in as ${esc(S.me?.name)}, so your picks and points don't change.</p>
+    </form>`, {href:"", label:"Home"});
+  if (!S.commish) setCommish(true);
+  const now = Date.now();
+  const next = S.games.filter(g => Date.parse(g.tip) + 3.5 * 3600e3 > now).slice(0, 3);
+  const past = S.games.filter(g => Date.parse(g.tip) + 3.5 * 3600e3 <= now && g.questions?.length).slice(-5).reverse();
+  const row = g => `<div class="trow"><div class="opp">${g.home ? "vs" : "at"} ${esc(g.oppName)}<small>${esc(fmtDay(g.tip))} · ${g.final ? "Graded" : g.questions?.length ? `${g.questions.length} lines posted` : "No lines yet"}</small></div>
+    ${locked(g) ? (g.questions?.length ? `<a href="#grade-${g.id}">${g.final ? "Fix stats" : "Enter stats"}</a>` : "") : `<a href="#setup-${g.id}">${g.questions?.length ? "Edit lines" : "Post lines"}</a>`}</div>`;
+  return shell(`<div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Signed in as ${esc(S.me?.name)}</span><h2>Commissioner tools</h2></div>
+    <div class="card tools">
+      <div><b>Check ESPN now</b><p class="note" style="margin:4px 0 0">Runs on its own every 15 minutes: updates the schedule, posts lines a day ahead, and grades finished games.</p></div>
+      <button class="cta ghost" id="syncBtn" type="button">Check ESPN now</button>
+      ${S.syncLog ? `<pre class="log">${esc(S.syncLog)}</pre>` : ""}
+    </div>
+    ${next.length ? `<span class="kicker">Coming up</span><div class="list">${next.map(row).join("")}</div>` : ""}
+    ${past.length ? `<span class="kicker">Recent</span><div class="list">${past.map(row).join("")}</div>` : ""}
+    <span class="kicker">Players</span>
+    <div class="card note" style="margin:0">${S.players.map(p => esc(p.name)).join(", ") || "Nobody yet."}<br>Share the site and the family passcode to add someone.</div>
+    <button class="cta" type="button" data-cm="off">Back to playing</button>`, {href:"", label:"Home"});
+}
+
 /* ---------- router ---------- */
 const route = () => location.hash.replace(/^#/, "");
 function render(){
@@ -662,18 +712,20 @@ function render(){
   else if (r.startsWith("grade-")) html = gradeView(r.slice(6));
   else if (r === "results") html = resultsView();
   else if (r === "schedule") html = scheduleView();
+  else if (r === "commish") html = commishView();
   else html = homeView();
   const keepScroll = render.last === r;
+  if (S.token && S.loaded) html = cmBar() + html;
   app.innerHTML = html;
   if (!keepScroll) window.scrollTo(0, 0);
   render.last = r;
   bindDeck();
 }
 // Background refreshes leave half-filled forms alone.
-function refresh(){ if (deck.busy) return; if (app.querySelector("form") && (!S.token || /^(setup|grade)-/.test(route()))) return; render(); }
+function refresh(){ if (deck.busy) return; if (app.querySelector("form") && (!S.token || /^(setup|grade|commish)/.test(route()))) return; render(); }
 addEventListener("hashchange", render);
 
-function signOut(){ S.token = null; S.me = null; S.loaded = false; store.set(null); render(); }
+function signOut(){ setCommish(false); S.token = null; S.me = null; S.loaded = false; store.set(null); render(); }
 
 app.addEventListener("click", async e => {
   const id = route().slice(5);
@@ -691,9 +743,13 @@ app.addEventListener("click", async e => {
     if (dk.dataset.deck === "restart") S.deck.i = 0;
     render(); return;
   }
-  if (e.target.closest("#syncBtn")) {
-    toast("Checking ESPN…");
-    try { const r = await api("/api/admin/sync", {method: "POST"}); toast(r.log[r.log.length - 1] || "Up to date"); load(); } catch (err) { toast(err.message); }
+  if (e.target.closest("[data-cm=off]")) { setCommish(false); if (route() === "commish" || /^(setup|grade)-/.test(route())) location.hash = ""; else render(); toast("Back to playing"); return; }
+  const sb = e.target.closest("#syncBtn");
+  if (sb) {
+    sb.disabled = true; sb.textContent = "Checking ESPN…";
+    try { const r = await api("/api/admin/sync", {method: "POST"}); S.syncLog = r.log.join("\n"); toast("Up to date"); }
+    catch (err) { S.syncLog = err.message; toast(err.message); }
+    await load(); render();
     return;
   }
   if (e.target.closest("#addRow")) { readSetup(); const n = S.setup.rows.length; S.setup.rows.push({id: "q" + Date.now().toString(36), team: n < 6 ? "POR" : gameById(S.setup.id).opp, player:"", stat:"PTS", line:""}); render(); return; }
@@ -709,6 +765,10 @@ app.addEventListener("submit", async e => {
       const r = await api("/api/login", {method: "POST", body: JSON.stringify({name, passcode})});
       S.token = r.token; S.me = r.me; S.loginErr = ""; store.set(r.token); await load();
     } catch (err) { S.loginErr = err.message; app.querySelector("#lerr").textContent = err.message; }
+  }
+  if (e.target.id === "unlockForm") {
+    try { const r = await api("/api/unlock", {method: "POST", body: JSON.stringify({passcode: app.querySelector("#cp").value})}); S.me = r.me; setCommish(true); toast("Commissioner mode on"); await load(); render(); }
+    catch (err) { app.querySelector("#cerr").textContent = err.message; }
   }
   if (e.target.id === "setupForm") {
     readSetup();

@@ -82,6 +82,14 @@ async function api(req, env, url) {
 
   if (path === "/api/state" && m === "GET") return json(await state(env, who));
 
+  // Promote the signed-in player to commissioner without a second account.
+  if (path === "/api/unlock" && m === "POST") {
+    const { passcode } = await body();
+    if (!env.ADMIN_PASSCODE || !passcode || !safeEqual(passcode, env.ADMIN_PASSCODE)) throw new HttpError(403, "That isn't the commissioner passcode.");
+    await env.DB.prepare("UPDATE players SET is_admin = 1 WHERE id = ?").bind(who.id).run();
+    return json({ me: { ...who, admin: true } });
+  }
+
   let hit;
   if ((hit = path.match(/^\/api\/picks\/(\d+)$/)) && m === "PUT") {
     const g = await getGame(env, hit[1]);
