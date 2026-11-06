@@ -1,0 +1,665 @@
+{
+ "header": {
+  "competitions": [
+   {
+    "status": {
+     "type": {
+      "id": "3",
+      "name": "STATUS_FINAL",
+      "state": "post",
+      "completed": true,
+      "description": "Final",
+      "detail": "Final",
+      "shortDetail": "Final"
+     }
+    },
+    "competitors": [
+     {
+      "team": {
+       "abbreviation": "PHX"
+      },
+      "score": "119",
+      "winner": false
+     },
+     {
+      "team": {
+       "abbreviation": "POR"
+      },
+      "score": "132",
+      "winner": true
+     }
+    ]
+   }
+  ]
+ },
+ "boxscore": {
+  "players": [
+   {
+    "team": {
+     "abbreviation": "POR"
+    },
+    "statistics": [
+     {
+      "keys": [
+       "minutes",
+       "points",
+       "fieldGoalsMade-fieldGoalsAttempted",
+       "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+       "freeThrowsMade-freeThrowsAttempted",
+       "rebounds",
+       "assists",
+       "turnovers",
+       "steals",
+       "blocks",
+       "offensiveRebounds",
+       "defensiveRebounds",
+       "fouls",
+       "plusMinus"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "displayName": "Toumani Camara"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "32",
+         "11",
+         "4-9",
+         "1-5",
+         "2-6",
+         "4",
+         "2",
+         "2",
+         "0",
+         "0",
+         "2",
+         "2",
+         "3",
+         "+6"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Deni Avdija"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "35",
+         "21",
+         "7-16",
+         "1-5",
+         "6-9",
+         "7",
+         "12",
+         "3",
+         "0",
+         "0",
+         "0",
+         "7",
+         "1",
+         "+16"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Donovan Clingan"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "29",
+         "24",
+         "9-12",
+         "1-2",
+         "5-6",
+         "11",
+         "1",
+         "4",
+         "1",
+         "3",
+         "4",
+         "7",
+         "1",
+         "+13"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Damian Lillard"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "33",
+         "25",
+         "9-17",
+         "2-8",
+         "5-5",
+         "3",
+         "5",
+         "1",
+         "0",
+         "0",
+         "0",
+         "3",
+         "2",
+         "+16"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Scoot Henderson"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "22",
+         "9",
+         "1-5",
+         "1-3",
+         "6-8",
+         "2",
+         "1",
+         "1",
+         "0",
+         "0",
+         "2",
+         "0",
+         "4",
+         "-8"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Robert Williams III"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "16",
+         "9",
+         "4-8",
+         "0-0",
+         "1-1",
+         "8",
+         "1",
+         "1",
+         "2",
+         "3",
+         "5",
+         "3",
+         "4",
+         "+2"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Micah Potter"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "2",
+         "4",
+         "1-1",
+         "1-1",
+         "1-2",
+         "1",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "1",
+         "0",
+         "-1"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Branden Carlson"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "3",
+         "2",
+         "1-1",
+         "0-0",
+         "0-0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "-4"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Yang Hansen"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "2",
+         "0",
+         "0-0",
+         "0-0",
+         "0-0",
+         "0",
+         "0",
+         "1",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "-1"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Jrue Holiday"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "28",
+         "15",
+         "5-9",
+         "5-9",
+         "0-0",
+         "4",
+         "0",
+         "3",
+         "1",
+         "0",
+         "0",
+         "4",
+         "2",
+         "+13"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Vit Krejci"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "12",
+         "5",
+         "2-5",
+         "1-4",
+         "0-0",
+         "3",
+         "2",
+         "0",
+         "0",
+         "0",
+         "2",
+         "1",
+         "2",
+         "+11"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Chris Youngblood"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "4",
+         "0",
+         "0-0",
+         "0-0",
+         "0-0",
+         "0",
+         "1",
+         "1",
+         "0",
+         "0",
+         "0",
+         "0",
+         "2",
+         "-7"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Sidy Cissoko"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "21",
+         "7",
+         "1-3",
+         "1-2",
+         "4-4",
+         "4",
+         "4",
+         "0",
+         "0",
+         "2",
+         "1",
+         "3",
+         "3",
+         "+9"
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "team": {
+     "abbreviation": "PHX"
+    },
+    "statistics": [
+     {
+      "keys": [
+       "minutes",
+       "points",
+       "fieldGoalsMade-fieldGoalsAttempted",
+       "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+       "freeThrowsMade-freeThrowsAttempted",
+       "rebounds",
+       "assists",
+       "turnovers",
+       "steals",
+       "blocks",
+       "offensiveRebounds",
+       "defensiveRebounds",
+       "fouls",
+       "plusMinus"
+      ],
+      "athletes": [
+       {
+        "athlete": {
+         "displayName": "Dillon Brooks"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "35",
+         "15",
+         "7-15",
+         "0-3",
+         "1-2",
+         "6",
+         "2",
+         "4",
+         "1",
+         "0",
+         "2",
+         "4",
+         "5",
+         "-16"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Miles Bridges"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "31",
+         "18",
+         "6-13",
+         "4-7",
+         "2-3",
+         "7",
+         "5",
+         "0",
+         "2",
+         "0",
+         "0",
+         "7",
+         "5",
+         "-6"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Khaman Maluach"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "16",
+         "6",
+         "3-7",
+         "0-1",
+         "0-0",
+         "6",
+         "2",
+         "0",
+         "0",
+         "1",
+         "1",
+         "5",
+         "0",
+         "-6"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Devin Booker"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "34",
+         "33",
+         "9-19",
+         "2-8",
+         "13-13",
+         "1",
+         "2",
+         "2",
+         "0",
+         "0",
+         "0",
+         "1",
+         "6",
+         "-7"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Jalen Green"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "32",
+         "22",
+         "6-17",
+         "2-8",
+         "8-8",
+         "2",
+         "2",
+         "2",
+         "0",
+         "2",
+         "0",
+         "2",
+         "5",
+         "-15"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Oso Ighodaro"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "23",
+         "9",
+         "4-6",
+         "0-0",
+         "1-3",
+         "7",
+         "7",
+         "1",
+         "0",
+         "3",
+         "4",
+         "3",
+         "2",
+         "-10"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Ryan Dunn"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "18",
+         "2",
+         "1-4",
+         "0-1",
+         "0-0",
+         "6",
+         "2",
+         "0",
+         "0",
+         "1",
+         "5",
+         "1",
+         "2",
+         "+5"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Koa Peat"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "3",
+         "2",
+         "0-0",
+         "0-0",
+         "2-2",
+         "1",
+         "0",
+         "0",
+         "0",
+         "0",
+         "1",
+         "0",
+         "1",
+         "+4"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Duop Reath"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "7",
+         "7",
+         "3-4",
+         "1-2",
+         "0-0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "+4"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Luke Kennard"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "14",
+         "0",
+         "0-0",
+         "0-0",
+         "0-0",
+         "0",
+         "1",
+         "1",
+         "0",
+         "0",
+         "0",
+         "0",
+         "1",
+         "-13"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Collin Gillespie"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "23",
+         "2",
+         "1-5",
+         "0-4",
+         "0-0",
+         "3",
+         "2",
+         "2",
+         "2",
+         "0",
+         "1",
+         "2",
+         "1",
+         "-13"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Jamaree Bouyea"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "3",
+         "3",
+         "1-1",
+         "1-1",
+         "0-0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "1",
+         "+4"
+        ]
+       },
+       {
+        "athlete": {
+         "displayName": "Pat Spencer"
+        },
+        "didNotPlay": false,
+        "stats": [
+         "3",
+         "0",
+         "0-1",
+         "0-1",
+         "0-0",
+         "0",
+         "1",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "0",
+         "+4"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}
