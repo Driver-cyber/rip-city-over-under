@@ -5,7 +5,7 @@
   "compatibility_date": "2026-10-01",
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
   "d1_databases": [
-    { "binding": "DB", "database_name": "ripcity", "database_id": "REPLACE_AFTER_D1_CREATE", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "ripcity", "database_id": "1e0944d0-4107-4d00-8cbd-5024fc6a495e", "migrations_dir": "migrations" }
   ],
   // Every 15 minutes: refresh the schedule, post lines for games within 30 hours, grade finished games.
   "triggers": { "crons": ["*/15 * * * *"] },
