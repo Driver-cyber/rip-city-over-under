@@ -212,6 +212,17 @@ pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;b
 .trow .opp{flex:1;min-width:0}
 .trow .opp small{display:block;color:var(--muted);font-size:13px}
 .trow a{font-size:14px;font-weight:600;white-space:nowrap}
+
+.qrow{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.qtop{display:grid;grid-template-columns:1fr 40px;gap:8px}
+.qr2{display:grid;grid-template-columns:80px 1fr;gap:8px}
+.qr3{display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:center}
+.addrow{display:flex;flex-wrap:wrap;gap:8px}
+.addrow button{flex:1 1 140px;min-height:46px;border:1.5px dashed var(--muted);border-radius:12px;background:transparent;font-weight:700;font-size:14px}
+.card.q.special{border-color:var(--ink);border-style:dashed}
+.swipe.special{border:2px dashed var(--ink)}
+.swipe .pl.long{font-family:var(--body);font-weight:700;font-size:clamp(26px,7vw,34px);line-height:1.15;text-transform:none;letter-spacing:0}
+.swipe .ynq{font-family:var(--display);font-weight:900;font-size:clamp(56px,16vw,80px);line-height:.9;text-transform:uppercase}
 </style>
 </head>
 <body>
@@ -225,6 +236,14 @@ pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;b
 <script>
 const TZ = "America/Los_Angeles";
 const STATS = {PTS:"points",REB:"rebounds",AST:"assists","3PM":"threes",BLK:"blocks",STL:"steals"};
+// Question kinds: player stat (graded from ESPN), commissioner's custom over/under, and yes/no.
+const qKind = q => q.kind === "custom" || q.kind === "yn" ? q.kind : "stat";
+const isYN = q => qKind(q) === "yn";
+const qTitle = q => qKind(q) === "stat" ? q.player : q.text;
+const qLineText = q => qKind(q) === "stat" ? `${q.stat} ${fmtLine(q.line)}` : isYN(q) ? "Yes or no" : `Over/under ${fmtLine(q.line)}`;
+const pickLabel = pk => ({over: "Over", under: "Under", yes: "Yes", no: "No"})[pk] || pk;
+const pickShort = pk => ({over: "O", under: "U", yes: "Y", no: "N"})[pk] || pk;
+const finalText = (q, v) => isYN(q) ? (v ? "Yes" : "No") : String(v);
 const S = {token:null, me:null, games:[], players:[], picks:{}, pickedBy:{}, loaded:false, offline:false, setup:null, loginErr:""};
 const app = document.getElementById("app");
 
@@ -261,6 +280,7 @@ async function api(path, opts = {}){
 function markQ(pick, q, fin){
   if (!pick || !fin || typeof fin.values?.[q.id] !== "number") return null;
   const v = fin.values[q.id];
+  if (isYN(q)) return (v === 1) === (pick === "yes") ? 1 : -1;
   if (v === q.line) return 0;
   return (v > q.line) === (pick === "over") ? 1 : -1;
 }
@@ -420,7 +440,7 @@ function gameView(id){
   const chips = (getPick, m) => lk && players.length ? `<div class="others">${players.map(p => {
       const pk = getPick(p); if (!pk) return `<span class="pickchip">${esc(nameOf(p))}: —</span>`;
       const mk = m(pk); const c = mk === 1 ? " good" : mk === -1 ? " badp" : mk === 0 ? " push" : "";
-      return `<span class="pickchip${c}">${esc(nameOf(p))}: ${esc(pk === "over" ? "Over" : pk === "under" ? "Under" : pk)}${mk != null ? ` <span class="num">${signed(mk)}</span>` : ""}</span>`;
+      return `<span class="pickchip${c}">${esc(nameOf(p))}: ${esc(pickLabel(pk))}${mk != null ? ` <span class="num">${signed(mk)}</span>` : ""}</span>`;
     }).join("")}</div>` : "";
 
   const winCard = `<div class="card q">
@@ -432,17 +452,18 @@ function gameView(id){
   </div>`;
 
   const qCard = q => {
-    const pk = mine.q?.[q.id], v = fin?.values?.[q.id], m = markQ(pk, q, fin), voided = fin?.voided?.includes(q.id);
-    return `<div class="card q">
+    const pk = mine.q?.[q.id], v = fin?.values?.[q.id], m = markQ(pk, q, fin), voided = fin?.voided?.includes(q.id), k = qKind(q);
+    const [a, b] = isYN(q) ? [["yes", "Yes", "✓"], ["no", "No", "✕"]] : [["over", "Over", "▲"], ["under", "Under", "▼"]];
+    return `<div class="card q${k !== "stat" ? " special" : ""}">
       <div class="qhead">
-        <div class="who"><b>${esc(q.player)}</b><small>${esc(q.team)} · ${esc(STATS[q.stat] || q.stat)}</small></div>
-        <div class="lineval"><span class="num">${fmtLine(q.line)}</span><small>${esc(q.stat)}</small></div>
+        <div class="who"><b>${esc(qTitle(q))}</b><small>${k === "stat" ? `${esc(q.team)} · ${esc(STATS[q.stat] || q.stat)}` : isYN(q) ? "Commissioner's special · yes or no" : "Commissioner's special"}</small></div>
+        ${isYN(q) ? "" : `<div class="lineval"><span class="num">${fmtLine(q.line)}</span><small>${k === "stat" ? esc(q.stat) : "line"}</small></div>`}
       </div>
-      <div class="seg">
-        <button data-q="${esc(q.id)}" data-v="over" aria-pressed="${pk === "over"}" ${can ? "" : "disabled"}><span class="tri" aria-hidden="true">▲</span>Over</button>
-        <button data-q="${esc(q.id)}" data-v="under" aria-pressed="${pk === "under"}" ${can ? "" : "disabled"}><span class="tri" aria-hidden="true">▼</span>Under</button>
-      </div>
-      ${typeof v === "number" ? `<div class="final"><span>Final: <b class="num">${v}</b> ${esc(q.stat)}</span>${m !== null ? `<span class="pts ${cls(m)}">${signed(m)}</span>` : ""}</div>` : voided ? `<div class="final"><span class="muted">Didn't play. No points either way.</span></div>` : ""}
+      <div class="seg">${[a, b].map(([val, label, icon]) =>
+        `<button data-q="${esc(q.id)}" data-v="${val}" aria-pressed="${pk === val}" ${can ? "" : "disabled"}><span class="tri" aria-hidden="true">${icon}</span>${label}</button>`).join("")}</div>
+      ${typeof v === "number" ? `<div class="final"><span>${isYN(q) ? "Result" : "Final"}: <b class="num">${esc(finalText(q, v))}</b> ${k === "stat" ? esc(q.stat) : ""}</span>${m !== null ? `<span class="pts ${cls(m)}">${signed(m)}</span>` : ""}</div>`
+        : voided ? `<div class="final"><span class="muted">Didn't play. No points either way.</span></div>`
+        : fin && k !== "stat" ? `<div class="final"><span class="muted">Waiting on the commissioner to grade this one.</span></div>` : ""}
       ${chips(p => S.picks[p][id].q?.[q.id], pk2 => markQ(pk2, q, fin))}
     </div>`;
   };
@@ -452,10 +473,11 @@ function gameView(id){
     ? `<div class="note">${fin ? (myScore ? `Your game: <b class="num">${signed(myScore.pts)}</b> (${myScore.w}–${myScore.l}${myScore.p ? `–${myScore.p}` : ""})` : "Final.") : "Picks locked at tip-off. Results go up automatically after the game."}${cm() ? ` <a href="#grade-${id}">${fin ? "Fix final stats" : "Enter final stats"}</a>` : ""}</div>`
     : `<div class="progress"><span class="num">${done}/${total}</span><div class="bar"><i style="width:${done / total * 100}%"></i></div><span class="muted">${others.length ? `${esc(others.map(nameOf).join(", "))} ${others.length > 1 ? "have" : "has"} picked` : "Locks at tip-off"}</span></div>`;
 
-  const por = qs.filter(q => q.team === "POR"), opp = qs.filter(q => q.team !== "POR");
+  const por = qs.filter(q => qKind(q) === "stat" && q.team === "POR"), opp = qs.filter(q => qKind(q) === "stat" && q.team !== "POR"), fun = qs.filter(q => qKind(q) !== "stat");
   return shell(`${boardHTML(g)}${banner()}${!lk ? viewToggle() : ""}${head}${winCard}
     ${por.length ? `<span class="kicker">Blazers</span>${por.map(qCard).join("")}` : ""}
     ${opp.length ? `<span class="kicker">${esc(g.oppName)}</span>${opp.map(qCard).join("")}` : ""}
+    ${fun.length ? `<span class="kicker">Commissioner's specials</span>${fun.map(qCard).join("")}` : ""}
     ${!lk ? `<p class="note">Picks save as you tap. Tap a pick again to clear it. Everyone's picks show here after tip-off.${cm() ? ` <a href="#setup-${id}">Edit lines</a>` : ""}</p>` : ""}
     ${lk && !fin ? `<a class="cta ghost" href="#results">See the leaderboard</a>` : ""}`, {href:"", label:"Home"});
 }
@@ -472,9 +494,9 @@ function resultsView(){
   const users = st.map(r => r.uid).filter(p => played.some(g => S.picks[p]?.[g.id]));
   const gameBlock = (g, i) => {
     const fin = g.final, qs = g.questions;
-    const cell = (pk, m) => pk ? `<td class="c"><span class="mk ${m == null ? "" : cls(m)}">${esc(pk === "over" ? "O" : pk === "under" ? "U" : pk)}${m != null ? ` ${signed(m)}` : ""}</span></td>` : `<td class="c muted">—</td>`;
+    const cell = (pk, m) => pk ? `<td class="c"><span class="mk ${m == null ? "" : cls(m)}">${esc(pickShort(pk))}${m != null ? ` ${signed(m)}` : ""}</span></td>` : `<td class="c muted">—</td>`;
     const rows = [`<tr><td>Winner</td><td class="num">${fin?.winner ? esc(fin.winner) : "—"}</td>${users.map(p => { const pk = S.picks[p]?.[g.id]?.winner; return cell(pk, markW(pk, fin)); }).join("")}</tr>`]
-      .concat(qs.map(q => `<tr><td>${esc(q.player)} <span class="muted">${esc(q.stat)} ${fmtLine(q.line)}</span></td><td class="num">${typeof fin?.values?.[q.id] === "number" ? fin.values[q.id] : fin?.voided?.includes(q.id) ? "DNP" : "—"}</td>${users.map(p => { const pk = S.picks[p]?.[g.id]?.q?.[q.id]; return cell(pk, markQ(pk, q, fin)); }).join("")}</tr>`));
+      .concat(qs.map(q => `<tr><td>${esc(qTitle(q))} <span class="muted">${esc(qLineText(q))}</span></td><td class="num">${typeof fin?.values?.[q.id] === "number" ? esc(finalText(q, fin.values[q.id])) : fin?.voided?.includes(q.id) ? "DNP" : "—"}</td>${users.map(p => { const pk = S.picks[p]?.[g.id]?.q?.[q.id]; return cell(pk, markQ(pk, q, fin)); }).join("")}</tr>`));
     return `<details class="gm"${i === 0 ? " open" : ""}>
       <summary><div class="date" style="width:62px;font-size:13px;line-height:1.2"><b style="display:block;font-family:var(--display);font-size:20px;font-weight:800;text-transform:uppercase">${esc(dow(g.tip))}</b>${esc(md(g.tip))}</div>
         <div class="opp">${g.home ? "vs" : "at"} ${esc(g.oppName)}<small>${fin ? `Final${fin.porScore != null ? ` · POR ${fin.porScore}–${fin.oppScore}` : ""}` : "Waiting on final stats"}</small></div>
@@ -492,19 +514,33 @@ function resultsView(){
 function setupView(id){
   const g = gameById(id);
   if (!S.me?.admin || !g) return shell(`<div class="card">Only the commissioner can post lines.</div>`, {href:"", label:"Home"});
-  if (!S.setup || S.setup.id !== id) S.setup = {id, rows: structuredClone(g.questions || [])};
-  if (!S.setup.rows.length) S.setup.rows = [{id:"q1", team:"POR", player:"", stat:"PTS", line:""}];
+  if (locked(g)) return shell(`${boardHTML(g)}<div class="card">This game has started, so the lines are locked.</div>`, {href:"game-" + id, label:"Game"});
+  if (!S.setup || S.setup.id !== id) {
+    S.setup = {id, rows: structuredClone(g.questions || []), roster: null};
+    api("/api/admin/roster/" + id).then(r => { if (S.setup?.id === id) { S.setup.roster = r; readSetup(); render(); } }).catch(() => {});
+  }
   const teams = ["POR", g.opp];
-  const r = (q, i) => `<div class="frow">
-    <select data-f="team" data-i="${i}" id="t${i}" aria-label="Team">${teams.map(t => `<option${q.team === t ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
-    <input data-f="player" data-i="${i}" id="p${i}" value="${esc(q.player)}" placeholder="Player" aria-label="Player">
-    <select data-f="stat" data-i="${i}" id="s${i}" aria-label="Stat">${Object.keys(STATS).map(s => `<option${q.stat === s ? " selected" : ""}>${s}</option>`).join("")}</select>
-    <input data-f="line" data-i="${i}" id="l${i}" value="${esc(q.line)}" inputmode="decimal" placeholder="Line" aria-label="Line">
-    <button class="x" type="button" data-del="${i}" aria-label="Remove line">×</button></div>`;
-  return shell(`${boardHTML(g)}<h2>Post the lines</h2>
-    <p class="note" style="margin:0">Player names must match ESPN's box score exactly for automatic grading. Whole-number lines allow a push.</p>
-    <form class="form" id="setupForm">${S.setup.rows.map(r).join("")}
-      <button type="button" class="cta ghost" id="addRow">Add a line</button>
+  const pickers = new Set([...(S.pickedBy[id] || []), ...(S.picks[uid()]?.[id] ? [uid()] : [])]);
+  const lists = teams.map(t => `<datalist id="roster-${esc(t)}">${(S.setup.roster?.[t] || []).map(n => `<option value="${esc(n)}"></option>`).join("")}</datalist>`).join("");
+  const kindSel = (q, i) => `<select data-f="kind" data-i="${i}" id="k${i}" aria-label="Question type">${[["stat", "Player stat"], ["custom", "Custom over/under"], ["yn", "Yes / no"]].map(([v, l]) => `<option value="${v}"${qKind(q) === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+  const r = (q, i) => {
+    const k = qKind(q);
+    const body = k === "stat"
+      ? `<div class="qr2"><select data-f="team" data-i="${i}" id="t${i}" aria-label="Team">${teams.map(t => `<option${q.team === t ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
+           <input data-f="player" data-i="${i}" id="p${i}" value="${esc(q.player || "")}" placeholder="Player" aria-label="Player" list="roster-${esc(q.team === g.opp ? g.opp : "POR")}" autocomplete="off"></div>
+         <div class="qr3"><select data-f="stat" data-i="${i}" id="s${i}" aria-label="Stat">${Object.keys(STATS).map(st => `<option${q.stat === st ? " selected" : ""}>${st}</option>`).join("")}</select>
+           <input data-f="line" data-i="${i}" id="l${i}" value="${esc(q.line ?? "")}" inputmode="decimal" placeholder="Line" aria-label="Line"></div>`
+      : `<input data-f="text" data-i="${i}" id="x${i}" value="${esc(q.text || "")}" maxlength="140" placeholder="${k === "yn" ? "Will Donovan Clingan get a technical foul?" : "Players wearing sweaters on the walk-in"}" aria-label="Question">
+         ${k === "custom" ? `<div class="qr3"><span class="note">Over/under line</span><input data-f="line" data-i="${i}" id="l${i}" value="${esc(q.line ?? "")}" inputmode="decimal" placeholder="3" aria-label="Line"></div>` : ""}`;
+    return `<div class="qrow"><div class="qtop">${kindSel(q, i)}<button class="x" type="button" data-del="${i}" aria-label="Remove question">×</button></div>${body}</div>`;
+  };
+  return shell(`${boardHTML(g)}<h2>${g.questions?.length ? "Edit the lines" : "Post the lines"}</h2>
+    <p class="note" style="margin:0">${pickers.size ? `<b>${pickers.size} ${pickers.size === 1 ? "person has" : "people have"} already picked.</b> Changing or removing a question clears their pick on that one. New questions just show up for them.` : "Nobody has picked yet, so change anything you like."} Lines lock at tip-off.</p>
+    ${!(g.questions || []).some(q => qKind(q) === "stat") ? `<button type="button" class="cta ghost" id="autoLines">Fill in the usual 10 from season averages</button>` : ""}
+    ${lists}
+    <form class="form" id="setupForm">${S.setup.rows.length ? S.setup.rows.map(r).join("") : `<div class="card note">No questions yet.</div>`}
+      <div class="addrow"><button type="button" data-add="stat">+ Player stat</button><button type="button" data-add="custom">+ Custom over/under</button><button type="button" data-add="yn">+ Yes / no</button></div>
+      <p class="note" style="margin:0">Pick player names from the list so ESPN can grade them. You grade custom and yes/no questions yourself after the game.</p>
       <button type="submit" class="cta">Save lines</button></form>`, {href:"game-" + id, label:"Game"});
 }
 
@@ -513,12 +549,14 @@ function gradeView(id){
   if (!S.me?.admin || !g?.questions?.length) return shell(`<div class="card">Only the commissioner can enter final stats.</div>`, {href:"", label:"Home"});
   const fin = g.final || {};
   return shell(`${boardHTML(g)}<h2>Final stats</h2>
-    <p class="note" style="margin:0">Games grade themselves from ESPN after the final buzzer. Use this to fix a mistake. Leave a box empty if the player didn't play.</p>
+    <p class="note" style="margin:0">Games grade themselves from ESPN after the final buzzer. Fill in your custom and yes/no questions here, or fix a mistake. Leave a player's box empty if they didn't play.</p>
     <form class="form" id="gradeForm">
       <div class="frow g"><label for="gw">Winner</label><select id="gw"><option value="">—</option>${["POR", g.opp].map(t => `<option${fin.winner === t ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></div>
       <div class="frow g"><label for="gps">Blazers score</label><input id="gps" inputmode="numeric" value="${fin.porScore ?? ""}"></div>
       <div class="frow g"><label for="gos">${esc(g.opp)} score</label><input id="gos" inputmode="numeric" value="${fin.oppScore ?? ""}"></div>
-      ${g.questions.map(q => `<div class="frow g"><label for="v_${esc(q.id)}">${esc(q.player)} <span class="muted">${esc(q.stat)} ${fmtLine(q.line)}</span></label><input id="v_${esc(q.id)}" data-qv="${esc(q.id)}" inputmode="numeric" value="${fin.values?.[q.id] ?? ""}"></div>`).join("")}
+      ${g.questions.map(q => { const v = fin.values?.[q.id]; return `<div class="frow g"><label for="v_${esc(q.id)}">${esc(qTitle(q))} <span class="muted">${esc(qLineText(q))}</span></label>${isYN(q)
+        ? `<select id="v_${esc(q.id)}" data-qv="${esc(q.id)}"><option value="">—</option><option value="yes"${v === 1 ? " selected" : ""}>Yes</option><option value="no"${v === 0 ? " selected" : ""}>No</option></select>`
+        : `<input id="v_${esc(q.id)}" data-qv="${esc(q.id)}" inputmode="numeric" value="${v ?? ""}">`}</div>`; }).join("")}
       <button type="submit" class="cta">Save and grade</button>
     </form>`, {href:"game-" + id, label:"Game"});
 }
@@ -548,12 +586,14 @@ function cardHTML(g, it, top, enter){
       <div style="display:flex;flex-direction:column;gap:8px">${was}<div class="hint"><span>← ${esc(g.opp)}</span><span>Blazers →</span></div></div>
     </div>`;
   }
-  const q = it.q;
-  return `<div class="swipe${top ? " top" : " under-card"}${enter ? " enter-l" : ""}" ${top ? `role="group" aria-label="${esc(q.player)}, ${fmtLine(q.line)} ${esc(STATS[q.stat] || q.stat)}. Swipe right for over, left for under"` : `aria-hidden="true"`}>
-    <span class="stamp yes">Over</span><span class="stamp no">Under</span>
-    <div><span class="tag">${esc(q.team === "POR" ? "Blazers" : g.oppName)} · ${esc(STATS[q.stat] || q.stat)}</span><div class="pl">${esc(q.player)}</div></div>
-    <div class="big"><span class="num">${fmtLine(q.line)}</span><small>${esc(q.stat)}</small></div>
-    <div style="display:flex;flex-direction:column;gap:8px">${pk ? `<span class="was">Your pick: ${pk === "over" ? "Over" : "Under"}</span>` : ""}<div class="hint"><span>← Under</span><span>Over →</span></div></div>
+  const q = it.q, k = qKind(q), yn = isYN(q);
+  const [yes, no] = yn ? ["Yes", "No"] : ["Over", "Under"];
+  const label = k === "stat" ? `${q.player}, ${fmtLine(q.line)} ${STATS[q.stat] || q.stat}` : yn ? q.text : `${q.text}, ${fmtLine(q.line)}`;
+  return `<div class="swipe${top ? " top" : " under-card"}${enter ? " enter-l" : ""}${k !== "stat" ? " special" : ""}" ${top ? `role="group" aria-label="${esc(label)}. Swipe right for ${yes.toLowerCase()}, left for ${no.toLowerCase()}"` : `aria-hidden="true"`}>
+    <span class="stamp yes">${yes}</span><span class="stamp no">${no}</span>
+    <div><span class="tag">${k === "stat" ? `${esc(q.team === "POR" ? "Blazers" : g.oppName)} · ${esc(STATS[q.stat] || q.stat)}` : "Commissioner's special"}</span><div class="pl${k !== "stat" ? " long" : ""}">${esc(qTitle(q))}</div></div>
+    ${yn ? `<div class="big"><span class="ynq">Yes or no?</span></div>` : `<div class="big"><span class="num">${fmtLine(q.line)}</span><small>${k === "stat" ? esc(q.stat) : "line"}</small></div>`}
+    <div style="display:flex;flex-direction:column;gap:8px">${pk ? `<span class="was">Your pick: ${esc(pickLabel(pk))}</span>` : ""}<div class="hint"><span>← ${no}</span><span>${yes} →</span></div></div>
   </div>`;
 }
 
@@ -572,8 +612,8 @@ function cardsView(g){
   if (i >= items.length) {
     const rows = items.map(it => {
       const pk = itemPick(g, it);
-      const label = it.kind === "winner" ? "Who wins?" : `${esc(it.q.player)} <span class="muted">${esc(it.q.stat)} ${fmtLine(it.q.line)}</span>`;
-      return `<div><span>${label}</span><b>${pk ? esc(pk === "over" ? "Over" : pk === "under" ? "Under" : pk) : "—"}</b></div>`;
+      const label = it.kind === "winner" ? "Who wins?" : `${esc(qTitle(it.q))} <span class="muted">${esc(qLineText(it.q))}</span>`;
+      return `<div><span>${label}</span><b>${pk ? esc(pickLabel(pk)) : "—"}</b></div>`;
     }).join("");
     return shell(`${head}${banner()}
       <div class="card" style="display:flex;flex-direction:column;gap:14px">
@@ -584,7 +624,8 @@ function cardsView(g){
       <div class="deckbtns"><button type="button" data-deck="restart">Go through again</button><a class="cta" href="#">Done</a></div>`, {href:"", label:"Home"});
   }
   const it = items[i], next = items[i + 1];
-  const yes = it.kind === "winner" ? "Blazers" : "Over", no = it.kind === "winner" ? esc(g.opp) : "Under";
+  const yn = it.kind === "q" && isYN(it.q);
+  const yes = it.kind === "winner" ? "Blazers" : yn ? "Yes" : "Over", no = it.kind === "winner" ? esc(g.opp) : yn ? "No" : "Under";
   const enter = S.deck.enter; S.deck.enter = false;
   return shell(`${head}${banner()}
     <div class="deck" id="deck">${next ? cardHTML(g, next, false) : ""}${cardHTML(g, it, true, enter)}</div>
@@ -595,7 +636,7 @@ function cardsView(g){
 function deckCommit(dir){
   const g = gameById(S.deck?.gid); if (!g) return;
   const it = deckItems(g)[S.deck.i]; if (!it) return;
-  const val = it.kind === "winner" ? (dir > 0 ? "POR" : g.opp) : (dir > 0 ? "over" : "under");
+  const val = it.kind === "winner" ? (dir > 0 ? "POR" : g.opp) : isYN(it.q) ? (dir > 0 ? "yes" : "no") : (dir > 0 ? "over" : "under");
   S.deck.i++;
   deck.busy = false;
   setPick(g.id, it.kind, it.id, val, false); // re-renders
@@ -752,10 +793,40 @@ app.addEventListener("click", async e => {
     await load(); render();
     return;
   }
-  if (e.target.closest("#addRow")) { readSetup(); const n = S.setup.rows.length; S.setup.rows.push({id: "q" + Date.now().toString(36), team: n < 6 ? "POR" : gameById(S.setup.id).opp, player:"", stat:"PTS", line:""}); render(); return; }
+  const add = e.target.closest("[data-add]");
+  if (add) {
+    readSetup();
+    const id = "q" + Date.now().toString(36), k = add.dataset.add;
+    S.setup.rows.push(k === "stat" ? {id, team: "POR", player: "", stat: "PTS", line: ""} : k === "custom" ? {id, kind: "custom", text: "", line: ""} : {id, kind: "yn", text: ""});
+    render();
+    app.querySelector(`#${k === "stat" ? "p" : "x"}${S.setup.rows.length - 1}`)?.focus();
+    return;
+  }
+  const al = e.target.closest("#autoLines");
+  if (al) {
+    readSetup(); al.disabled = true; al.textContent = "Getting season averages…";
+    try { const r = await api("/api/admin/autolines/" + S.setup.id, {method: "POST"}); S.setup.rows = r.questions.concat(S.setup.rows.filter(q => qKind(q) !== "stat")); toast("Added " + r.questions.length + " lines. Save to post them."); }
+    catch (err) { toast(err.message); }
+    render(); return;
+  }
   const del = e.target.closest("[data-del]"); if (del) { readSetup(); S.setup.rows.splice(+del.dataset.del, 1); render(); }
 });
-function readSetup(){ app.querySelectorAll("#setupForm [data-f]").forEach(el => { const row = S.setup.rows[+el.dataset.i]; if (row) row[el.dataset.f] = el.value; }); }
+function readSetup(){
+  app.querySelectorAll("#setupForm [data-f]").forEach(el => {
+    const row = S.setup.rows[+el.dataset.i]; if (!row) return;
+    if (el.dataset.f === "kind") { if (el.value === "stat") delete row.kind; else row.kind = el.value; }
+    else row[el.dataset.f] = el.value;
+  });
+}
+// Changing a question's type or team redraws its fields.
+app.addEventListener("change", e => {
+  const f = e.target.closest?.("#setupForm [data-f=kind], #setupForm [data-f=team]");
+  if (!f) return;
+  readSetup();
+  const row = S.setup.rows[+f.dataset.i];
+  if (f.dataset.f === "kind" && row) { const k = qKind(row); if (k === "stat") { row.team ||= "POR"; row.stat ||= "PTS"; } }
+  render();
+});
 
 app.addEventListener("submit", async e => {
   e.preventDefault();
@@ -773,7 +844,11 @@ app.addEventListener("submit", async e => {
   if (e.target.id === "setupForm") {
     readSetup();
     const gid = S.setup.id;
-    try { await api("/api/admin/lines/" + gid, {method: "PUT", body: JSON.stringify({questions: S.setup.rows})}); S.setup = null; toast("Lines saved"); location.hash = "game-" + gid; load(); }
+    try {
+      const r = await api("/api/admin/lines/" + gid, {method: "PUT", body: JSON.stringify({questions: S.setup.rows})});
+      S.setup = null; toast(r.cleared ? `Lines saved. Cleared ${r.cleared} pick${r.cleared === 1 ? "" : "s"} on changed questions.` : "Lines saved");
+      location.hash = "game-" + gid; load();
+    }
     catch (err) { toast(err.message); }
   }
   if (e.target.id === "gradeForm") {

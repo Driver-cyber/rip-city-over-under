@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseAverages, averagesFromBoxes, buildLines, parseBox, gradeFromSummary, markQ, markW } from "../src/lines.js";
+import { parseAverages, averagesFromBoxes, buildLines, parseBox, gradeFromSummary, markQ, markW, cleanQuestions, changedQuestionIds } from "../src/lines.js";
 
 const fixture = name => JSON.parse(readFileSync(new URL("./fixtures/" + name, import.meta.url)));
 const averages = parseAverages(fixture("averages.json"));
@@ -72,4 +72,34 @@ test("backup averages from box scores build lines", () => {
   assert.equal(deni.pts, parseBox(summary)["Deni Avdija"].PTS);
   assert.ok(deni.min > 0);
   assert.equal(buildLines(avg, "POR").length, 6);
+});
+
+test("commissioner questions: stat, custom over/under, yes/no", () => {
+  const qs = cleanQuestions([
+    { id: "q1", team: "POR", player: " Deni Avdija ", stat: "PTS", line: "23" },
+    { id: "qa", kind: "custom", text: "Players in sweaters on the walk-in", line: "3" },
+    { id: "qb", kind: "yn", text: "Will Donovan Clingan get a technical?" },
+    { id: "qc", kind: "yn", text: "   " },
+    { id: "qd", kind: "custom", text: "No line", line: "" },
+  ], "LAL");
+  assert.deepEqual(qs.map(q => q.id), ["q1", "qa", "qb"]);
+  assert.equal(qs[0].player, "Deni Avdija");
+  assert.equal(qs[1].team, "FUN");
+  assert.equal(markQ("yes", qs[2], { values: { qb: 1 } }), 1);
+  assert.equal(markQ("no", qs[2], { values: { qb: 1 } }), -1);
+  assert.equal(markQ("no", qs[2], { values: { qb: 0 } }), 1);
+  assert.equal(markQ("under", qs[1], { values: { qa: 3 } }), 0);
+});
+
+test("only changed or removed questions clear picks", () => {
+  const old = [{ id: "q1", player: "A", stat: "PTS", line: 20 }, { id: "q2", player: "B", stat: "REB", line: 5 }, { id: "q3", kind: "yn", text: "T?" }];
+  const now = [{ id: "q1", player: "A", stat: "PTS", line: 20 }, { id: "q2", player: "B", stat: "REB", line: 6 }, { id: "q4", kind: "yn", text: "New?" }];
+  assert.deepEqual(changedQuestionIds(old, now), ["q2", "q3"]);
+});
+
+test("ESPN grading leaves commissioner questions alone", () => {
+  const f = gradeFromSummary(summary, [{ id: "q1", player: "Deni Avdija", stat: "PTS", line: 1 }, { id: "qa", kind: "custom", text: "Sweaters", line: 3 }], "PHX");
+  assert.ok("q1" in f.values);
+  assert.ok(!("qa" in f.values));
+  assert.deepEqual(f.voided, []);
 });

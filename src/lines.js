@@ -3,6 +3,31 @@
 
 export const STATS = ["PTS", "REB", "AST", "3PM", "BLK", "STL"];
 
+// Question kinds: "stat" (a player's box-score stat, graded from ESPN),
+// "custom" (commissioner's own over/under) and "yn" (yes/no). The last two
+// are graded by the commissioner; a yes/no result is stored as 1 or 0.
+export const qKind = q => (q.kind === "custom" || q.kind === "yn" ? q.kind : "stat");
+
+// Clean up questions sent by the commissioner; drops incomplete ones.
+export function cleanQuestions(list, opp) {
+  return (list || []).map((q, i) => {
+    const id = /^q\w+$/.test(q.id) ? q.id : "q" + (i + 1);
+    const kind = qKind(q);
+    const line = q.line === "" || q.line == null ? NaN : Number(q.line);
+    if (kind === "stat") return { id, team: q.team === opp ? opp : "POR", player: String(q.player || "").trim().slice(0, 40), stat: STATS.includes(q.stat) ? q.stat : "PTS", line };
+    const text = String(q.text || "").trim().replace(/\s+/g, " ").slice(0, 140);
+    return kind === "custom" ? { id, kind, team: "FUN", text, line } : { id, kind, team: "FUN", text };
+  }).filter(q => qKind(q) === "yn" ? q.text : (q.player || q.text) && Number.isFinite(q.line));
+}
+
+// Ids of old questions whose wording or line changed (or that were removed):
+// picks on those are cleared so nobody keeps an answer to a different question.
+export function changedQuestionIds(oldQs, newQs) {
+  const sig = q => JSON.stringify([qKind(q), q.team, q.player, q.stat, q.text, q.line]);
+  const now = Object.fromEntries((newQs || []).map(q => [q.id, sig(q)]));
+  return (oldQs || []).filter(q => now[q.id] !== sig(q)).map(q => q.id);
+}
+
 const AVG_KEY = { PTS: "pts", REB: "reb", AST: "ast", "3PM": "tpm", BLK: "blk", STL: "stl" };
 
 // Which questions to ask, in order. Each slot takes the best remaining
@@ -116,6 +141,7 @@ export function gradeFromSummary(summary, questions, oppAbbr) {
   const box = parseBox(summary);
   const values = {}, voided = [];
   for (const q of questions) {
+    if (qKind(q) !== "stat") continue; // the commissioner grades these
     const v = box[q.player]?.[q.stat];
     if (typeof v === "number" && !Number.isNaN(v)) values[q.id] = v;
     else voided.push(q.id); // didn't play: no points either way
@@ -126,6 +152,7 @@ export function gradeFromSummary(summary, questions, oppAbbr) {
 export function markQ(pick, q, fin) {
   if (!pick || !fin || typeof fin.values?.[q.id] !== "number") return null;
   const v = fin.values[q.id];
+  if (qKind(q) === "yn") return (v === 1) === (pick === "yes") ? 1 : -1;
   if (v === q.line) return 0;
   return (v > q.line) === (pick === "over") ? 1 : -1;
 }

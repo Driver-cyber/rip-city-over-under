@@ -1,4 +1,4 @@
-import { STATS, parseAverages, averagesFromBoxes, buildLines, gradeFromSummary } from "./lines.js";
+import { qKind, cleanQuestions, changedQuestionIds, parseAverages, averagesFromBoxes, buildLines, gradeFromSummary } from "./lines.js";
 
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
 const AVERAGES = "https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byathlete?limit=600";
@@ -99,9 +99,12 @@ async function api(req, env, url) {
     if (Date.now() >= Date.parse(g.tip)) throw new HttpError(409, "Picks are locked. The game has started.");
     const b = await body();
     const winner = b.winner === "POR" || b.winner === g.opp ? b.winner : null;
-    const ids = new Set(g.questions.map(q => q.id));
+    const kinds = Object.fromEntries(g.questions.map(q => [q.id, qKind(q)]));
     const q = {};
-    for (const [k, v] of Object.entries(b.q || {})) if (ids.has(k) && (v === "over" || v === "under")) q[k] = v;
+    for (const [k, v] of Object.entries(b.q || {})) {
+      if (!kinds[k]) continue;
+      if (kinds[k] === "yn" ? v === "yes" || v === "no" : v === "over" || v === "under") q[k] = v;
+    }
     await env.DB.prepare(`INSERT INTO picks (player_id, game_id, winner, q, updated_at) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT (player_id, game_id) DO UPDATE SET winner = excluded.winner, q = excluded.q, updated_at = excluded.updated_at`)
       .bind(who.id, g.id, winner, JSON.stringify(q), now()).run();
@@ -112,27 +115,58 @@ async function api(req, env, url) {
     if (!who.admin) throw new HttpError(403, "Only the commissioner can do that.");
     if ((hit = path.match(/^\/api\/admin\/lines\/(\d+)$/)) && m === "PUT") {
       const g = await getGame(env, hit[1]);
-      const qs = ((await body()).questions || []).map((q, i) => ({
-        id: /^q[\w]+$/.test(q.id) ? q.id : "q" + (i + 1),
-        team: q.team === g.opp ? g.opp : "POR",
-        player: String(q.player || "").trim().slice(0, 40),
-        stat: STATS.includes(q.stat) ? q.stat : "PTS",
-        line: Number(q.line),
-      })).filter(q => q.player && Number.isFinite(q.line));
-      if (!qs.length) throw new HttpError(400, "Add at least one line.");
-      await env.DB.prepare("UPDATE games SET questions = ?, updated_at = ? WHERE id = ?").bind(JSON.stringify(qs), now(), g.id).run();
-      return json({ ok: true });
+      if (Date.now() >= Date.parse(g.tip)) throw new HttpError(409, "The game has started, so the lines are locked.");
+      const qs = cleanQuestions((await body()).questions, g.opp);
+      if (!qs.length) throw new HttpError(400, "Add at least one complete question.");
+      const changed = new Set(changedQuestionIds(g.questions, qs));
+      const stmts = [env.DB.prepare("UPDATE games SET questions = ?, updated_at = ? WHERE id = ?").bind(JSON.stringify(qs), now(), g.id)];
+      let cleared = 0;
+      if (changed.size) {
+        const rows = (await env.DB.prepare("SELECT player_id, q FROM picks WHERE game_id = ?").bind(g.id).all()).results;
+        for (const r of rows) {
+          const q = JSON.parse(r.q || "{}"), before = Object.keys(q).length;
+          for (const id of changed) delete q[id];
+          if (Object.keys(q).length === before) continue;
+          cleared += before - Object.keys(q).length;
+          stmts.push(env.DB.prepare("UPDATE picks SET q = ?, updated_at = ? WHERE player_id = ? AND game_id = ?").bind(JSON.stringify(q), now(), r.player_id, g.id));
+        }
+      }
+      await env.DB.batch(stmts);
+      return json({ ok: true, cleared });
+    }
+    if ((hit = path.match(/^\/api\/admin\/autolines\/(\d+)$/)) && m === "POST") {
+      const g = await getGame(env, hit[1]);
+      if (Date.now() >= Date.parse(g.tip)) throw new HttpError(409, "The game has started, so the lines are locked.");
+      const log = [];
+      const stat = await statLines(g, log);
+      if (!stat) throw new HttpError(502, log.join(" ") || "Couldn't build lines from ESPN right now.");
+      return json({ questions: stat, log });
+    }
+    if ((hit = path.match(/^\/api\/admin\/roster\/(\d+)$/)) && m === "GET") {
+      const g = await getGame(env, hit[1]);
+      const out = {};
+      for (const t of ["POR", g.opp]) {
+        try {
+          const r = await getJSON(`${ESPN}/teams/${t.toLowerCase()}/roster`);
+          out[t] = (r.athletes || []).flatMap(a => a.items || [a]).map(a => a.displayName).filter(Boolean).sort();
+        } catch { out[t] = []; }
+      }
+      return json(out);
     }
     if ((hit = path.match(/^\/api\/admin\/final\/(\d+)$/)) && m === "PUT") {
       const g = await getGame(env, hit[1]);
       const f = (await body()).final || {};
       const num = v => (v === null || v === "" || v === undefined || !Number.isFinite(Number(v))) ? null : Number(v);
       const values = {};
-      for (const q of g.questions || []) { const v = num(f.values?.[q.id]); if (v !== null) values[q.id] = v; }
+      for (const q of g.questions || []) {
+        const raw = f.values?.[q.id];
+        const v = qKind(q) === "yn" ? (raw === "yes" || raw === 1 ? 1 : raw === "no" || raw === 0 ? 0 : null) : num(raw);
+        if (v !== null) values[q.id] = v;
+      }
       const final = {
         winner: f.winner === "POR" || f.winner === g.opp ? f.winner : null,
         porScore: num(f.porScore), oppScore: num(f.oppScore), values,
-        voided: (g.questions || []).map(q => q.id).filter(id => !(id in values)),
+        voided: (g.questions || []).filter(q => qKind(q) === "stat" && !(q.id in values)).map(q => q.id),
         source: "manual", gradedAt: now(),
       };
       await env.DB.prepare("UPDATE games SET final = ?, updated_at = ? WHERE id = ?").bind(JSON.stringify(final), now(), g.id).run();
@@ -206,26 +240,16 @@ export async function sync(env) {
   const t = Date.now();
 
   // 2. Lines for the next game, from season averages, skipping players listed out.
-  const due = games.filter(g => !g.questions?.length && Date.parse(g.tip) > t && Date.parse(g.tip) - t < LINES_AHEAD_MS);
-  if (due.length) {
-    let averages = null;
-    try { averages = parseAverages(await getJSON(env.AVERAGES_URL || AVERAGES)); }
-    catch (e) { log.push(`season averages: ${e.message}; using recent box scores instead`); }
-    for (const g of due) try {
-      const pool = averages || await recentAverages(["POR", g.opp]);
-      let out = [];
-      try {
-        const s = await getJSON(`${ESPN}/summary?event=${g.id}`);
-        out = (s.injuries || []).flatMap(t => t.injuries || []).filter(i => /out/i.test(i.status || "")).map(i => i.athlete?.displayName);
-      } catch (e) { log.push(`injuries for ${g.id}: ${e.message}`); }
-      const por = buildLines(pool, "POR", { out });
-      const opp = buildLines(pool, g.opp, { out, opponent: true, startId: por.length + 1 });
-      if (por.length + opp.length < 4) { log.push(`lines for ${g.id}: not enough season data yet`); continue; }
-      await env.DB.prepare("UPDATE games SET questions = ?, updated_at = ? WHERE id = ? AND questions IS NULL")
-        .bind(JSON.stringify(por.concat(opp)), now(), g.id).run();
-      log.push(`lines vs ${g.opp}: ${por.length + opp.length} posted`);
-    } catch (e) { log.push(`lines vs ${g.opp}: ${e.message}`); }
-  }
+  const due = games.filter(g => !(g.questions || []).some(q => qKind(q) === "stat") && Date.parse(g.tip) > t && Date.parse(g.tip) - t < LINES_AHEAD_MS);
+  const cache = {};
+  for (const g of due) try {
+    const stat = await statLines(g, log, cache);
+    if (!stat) continue;
+    const specials = (g.questions || []).filter(q => qKind(q) !== "stat");
+    const r = await env.DB.prepare("UPDATE games SET questions = ?, updated_at = ? WHERE id = ? AND COALESCE(questions, '') = ?")
+      .bind(JSON.stringify(stat.concat(specials)), now(), g.id, g.questions ? JSON.stringify(g.questions) : "").run();
+    log.push(r.meta?.changes ? `lines vs ${g.opp}: ${stat.length} posted` : `lines vs ${g.opp}: changed while posting, skipped`);
+  } catch (e) { log.push(`lines vs ${g.opp}: ${e.message}`); }
 
   // 3. Grade finished games that have lines and no final yet.
   const toGrade = games.filter(g => g.questions?.length && !g.final && finals.has(g.id)).slice(0, MAX_GRADES_PER_RUN);
@@ -237,6 +261,26 @@ export async function sync(env) {
   } catch (e) { log.push(`grade vs ${g.opp}: ${e.message}`); }
   if (log.length === 1) log.push("nothing else to do right now");
   return log;
+}
+
+// Six Blazers and four opponent lines from season averages (or recent box
+// scores if that page is refused), skipping players listed out. Null if
+// there isn't enough data yet.
+async function statLines(g, log, cache = {}) {
+  if (cache.averages === undefined) {
+    try { cache.averages = parseAverages(await getJSON(AVERAGES)); }
+    catch (e) { cache.averages = null; log.push(`season averages: ${e.message}; using recent box scores instead`); }
+  }
+  const pool = cache.averages || await recentAverages(["POR", g.opp]);
+  let out = [];
+  try {
+    const s = await getJSON(`${ESPN}/summary?event=${g.id}`);
+    out = (s.injuries || []).flatMap(t => t.injuries || []).filter(i => /out/i.test(i.status || "")).map(i => i.athlete?.displayName);
+  } catch (e) { log.push(`injuries vs ${g.opp}: ${e.message}`); }
+  const por = buildLines(pool, "POR", { out });
+  const opp = buildLines(pool, g.opp, { out, opponent: true, startId: por.length + 1 });
+  if (por.length + opp.length < 4) { log.push(`lines vs ${g.opp}: not enough season data yet`); return null; }
+  return por.concat(opp);
 }
 
 // Averages from each team's last few finished games, for when ESPN's
