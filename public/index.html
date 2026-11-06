@@ -223,6 +223,14 @@ pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;b
 .swipe.special{border:2px dashed var(--ink)}
 .swipe .pl.long{font-family:var(--body);font-weight:700;font-size:clamp(26px,7vw,34px);line-height:1.15;text-transform:none;letter-spacing:0}
 .swipe .ynq{font-family:var(--display);font-weight:900;font-size:clamp(56px,16vw,80px);line-height:.9;text-transform:uppercase}
+
+.alert{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:15px}
+.alert a{color:var(--accent-ink);font-weight:600}
+details.card summary{list-style:none}
+.sumrow{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.sumrow .tw::after{content:"Show";font-size:12px;letter-spacing:.6px;color:var(--ink)}
+details[open] .sumrow .tw::after{content:"Hide"}
+details.card summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
@@ -244,6 +252,9 @@ const qLineText = q => qKind(q) === "stat" ? `${q.stat} ${fmtLine(q.line)}` : is
 const pickLabel = pk => ({over: "Over", under: "Under", yes: "Yes", no: "No"})[pk] || pk;
 const pickShort = pk => ({over: "O", under: "U", yes: "Y", no: "N"})[pk] || pk;
 const finalText = (q, v) => isYN(q) ? (v ? "Yes" : "No") : String(v);
+// Commissioner's questions on a started game that still need an answer.
+const needsAnswers = g => locked(g) ? (g.questions || []).filter(q => qKind(q) !== "stat" && typeof g.final?.values?.[q.id] !== "number") : [];
+const isFinal = g => !!g.final?.winner;
 const S = {token:null, me:null, games:[], players:[], picks:{}, pickedBy:{}, loaded:false, offline:false, setup:null, loginErr:""};
 const app = document.getElementById("app");
 
@@ -306,7 +317,7 @@ function standings(){
 const gameById = id => S.games.find(g => g.id === id);
 function featured(){ const now = Date.now(); return S.games.find(g => Date.parse(g.tip) + 3.5 * 3600e3 > now) || null; }
 function status(g){
-  if (g.final) return ["done", "Final"];
+  if (isFinal(g)) return ["done", "Final"];
   if (locked(g)) return ["", g.questions?.length ? "Picks locked" : "No lines"];
   if (!g.questions?.length) return ["", "Lines soon"];
   const mine = S.picks[uid()]?.[g.id];
@@ -413,7 +424,7 @@ function homeView(){
     <h1>Rip City<br>Over/Under</h1>
     <p class="muted" style="margin:0">Hi ${esc(S.me?.name)}. Pick the winner and ten stat lines for each game. Right is +1, wrong is −1, landing exactly on the line is 0.</p>
   </div>
-  ${banner()}${feat}
+  ${banner()}${cm() ? answerAlert() : ""}${feat}
   <a class="card" href="#results" style="display:flex;align-items:center;justify-content:space-between;gap:12px;text-decoration:none">
     <div style="min-width:0"><div class="kicker">Season leaderboard</div><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${lead}</div></div>
     <span aria-hidden="true" style="font-size:20px">→</span>
@@ -470,7 +481,7 @@ function gameView(id){
 
   const myScore = fin ? scoreGame(uid(), id) : null;
   const head = lk
-    ? `<div class="note">${fin ? (myScore ? `Your game: <b class="num">${signed(myScore.pts)}</b> (${myScore.w}–${myScore.l}${myScore.p ? `–${myScore.p}` : ""})` : "Final.") : "Picks locked at tip-off. Results go up automatically after the game."}${cm() ? ` <a href="#grade-${id}">${fin ? "Fix final stats" : "Enter final stats"}</a>` : ""}</div>`
+    ? `<div class="note">${fin ? (myScore ? `Your game: <b class="num">${signed(myScore.pts)}</b> (${myScore.w}–${myScore.l}${myScore.p ? `–${myScore.p}` : ""})` : "Final.") : "Picks locked at tip-off. Results go up automatically after the game."}${cm() ? ` <a href="#grade-${id}">${needsAnswers(g).length ? "Enter the answer key" : fin ? "Fix final stats" : "Enter final stats"}</a>` : ""}</div>`
     : `<div class="progress"><span class="num">${done}/${total}</span><div class="bar"><i style="width:${done / total * 100}%"></i></div><span class="muted">${others.length ? `${esc(others.map(nameOf).join(", "))} ${others.length > 1 ? "have" : "has"} picked` : "Locks at tip-off"}</span></div>`;
 
   const por = qs.filter(q => qKind(q) === "stat" && q.team === "POR"), opp = qs.filter(q => qKind(q) === "stat" && q.team !== "POR"), fun = qs.filter(q => qKind(q) !== "stat");
@@ -499,7 +510,7 @@ function resultsView(){
       .concat(qs.map(q => `<tr><td>${esc(qTitle(q))} <span class="muted">${esc(qLineText(q))}</span></td><td class="num">${typeof fin?.values?.[q.id] === "number" ? esc(finalText(q, fin.values[q.id])) : fin?.voided?.includes(q.id) ? "DNP" : "—"}</td>${users.map(p => { const pk = S.picks[p]?.[g.id]?.q?.[q.id]; return cell(pk, markQ(pk, q, fin)); }).join("")}</tr>`));
     return `<details class="gm"${i === 0 ? " open" : ""}>
       <summary><div class="date" style="width:62px;font-size:13px;line-height:1.2"><b style="display:block;font-family:var(--display);font-size:20px;font-weight:800;text-transform:uppercase">${esc(dow(g.tip))}</b>${esc(md(g.tip))}</div>
-        <div class="opp">${g.home ? "vs" : "at"} ${esc(g.oppName)}<small>${fin ? `Final${fin.porScore != null ? ` · POR ${fin.porScore}–${fin.oppScore}` : ""}` : "Waiting on final stats"}</small></div>
+        <div class="opp">${g.home ? "vs" : "at"} ${esc(g.oppName)}<small>${isFinal(g) ? `Final${fin.porScore != null ? ` · POR ${fin.porScore}–${fin.oppScore}` : ""}${needsAnswers(g).length ? " · specials still being graded" : ""}` : "Waiting on final stats"}</small></div>
         <div style="text-align:right;font-size:13px">${users.map(p => { const s = scoreGame(p, g.id); return s ? `<div>${esc(nameOf(p))} <span class="pts ${cls(s.pts)}">${signed(s.pts)}</span></div>` : ""; }).join("")}</div></summary>
       <div class="tbl"><table><thead><tr><th>Line</th><th>Final</th>${users.map(p => `<th class="c">${esc(nameOf(p))}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>
     </details>`;
@@ -547,17 +558,26 @@ function setupView(id){
 function gradeView(id){
   const g = gameById(id);
   if (!S.me?.admin || !g?.questions?.length) return shell(`<div class="card">Only the commissioner can enter final stats.</div>`, {href:"", label:"Home"});
-  const fin = g.final || {};
-  return shell(`${boardHTML(g)}<h2>Final stats</h2>
-    <p class="note" style="margin:0">Games grade themselves from ESPN after the final buzzer. Fill in your custom and yes/no questions here, or fix a mistake. Leave a player's box empty if they didn't play.</p>
+  if (!locked(g)) return shell(`${boardHTML(g)}<div class="card">This game hasn't started yet. Come back after it's over to grade it.</div>`, {href:"game-" + id, label:"Game"});
+  const fin = g.final || {}, espn = !!(fin.espnGraded || fin.source === "espn");
+  const specials = g.questions.filter(q => qKind(q) !== "stat"), stats = g.questions.filter(q => qKind(q) === "stat");
+  const field = q => { const v = fin.values?.[q.id]; return `<div class="frow g"><label for="v_${esc(q.id)}">${esc(qTitle(q))} <span class="muted">${esc(qLineText(q))}</span></label>${isYN(q)
+    ? `<select id="v_${esc(q.id)}" data-qv="${esc(q.id)}"><option value="">—</option><option value="yes"${v === 1 ? " selected" : ""}>Yes</option><option value="no"${v === 0 ? " selected" : ""}>No</option></select>`
+    : `<input id="v_${esc(q.id)}" data-qv="${esc(q.id)}" inputmode="numeric" value="${v ?? ""}" placeholder="${qKind(q) === "custom" ? "Count" : ""}">`}</div>`; };
+  return shell(`${boardHTML(g)}<h2>${specials.length ? "Answer key" : "Final stats"}</h2>
     <form class="form" id="gradeForm">
-      <div class="frow g"><label for="gw">Winner</label><select id="gw"><option value="">—</option>${["POR", g.opp].map(t => `<option${fin.winner === t ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></div>
-      <div class="frow g"><label for="gps">Blazers score</label><input id="gps" inputmode="numeric" value="${fin.porScore ?? ""}"></div>
-      <div class="frow g"><label for="gos">${esc(g.opp)} score</label><input id="gos" inputmode="numeric" value="${fin.oppScore ?? ""}"></div>
-      ${g.questions.map(q => { const v = fin.values?.[q.id]; return `<div class="frow g"><label for="v_${esc(q.id)}">${esc(qTitle(q))} <span class="muted">${esc(qLineText(q))}</span></label>${isYN(q)
-        ? `<select id="v_${esc(q.id)}" data-qv="${esc(q.id)}"><option value="">—</option><option value="yes"${v === 1 ? " selected" : ""}>Yes</option><option value="no"${v === 0 ? " selected" : ""}>No</option></select>`
-        : `<input id="v_${esc(q.id)}" data-qv="${esc(q.id)}" inputmode="numeric" value="${v ?? ""}">`}</div>`; }).join("")}
-      <button type="submit" class="cta">Save and grade</button>
+      ${specials.length ? `<div class="card form"><span class="kicker">Commissioner's specials</span>
+        <p class="note" style="margin:0">What actually happened? Enter the real number for each over/under and Yes or No for the rest. Points count as soon as you save.</p>
+        ${specials.map(field).join("")}</div>` : ""}
+      <details class="card"${specials.length ? "" : " open"}><summary class="kicker sumrow">Final score and player stats<span class="tw" aria-hidden="true"></span></summary>
+        <div class="form" style="margin-top:12px">
+          <p class="note" style="margin:0">${espn ? "Filled in from ESPN's box score. Change one only to fix a mistake. An empty box means the player didn't play." : "ESPN fills these in on its own after the final buzzer. You can leave them empty."}</p>
+          <div class="frow g"><label for="gw">Winner</label><select id="gw"><option value="">—</option>${["POR", g.opp].map(t => `<option${fin.winner === t ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></div>
+          <div class="frow g"><label for="gps">Blazers score</label><input id="gps" inputmode="numeric" value="${fin.porScore ?? ""}"></div>
+          <div class="frow g"><label for="gos">${esc(g.opp)} score</label><input id="gos" inputmode="numeric" value="${fin.oppScore ?? ""}"></div>
+          ${stats.map(field).join("")}
+        </div></details>
+      <button type="submit" class="cta">${specials.length ? "Save the answer key" : "Save and grade"}</button>
     </form>`, {href:"game-" + id, label:"Game"});
 }
 
@@ -713,6 +733,12 @@ const cm = () => !!(S.me?.admin && S.commish);
 function setCommish(on){ S.commish = on; try { on ? localStorage.setItem(CM_KEY, "1") : localStorage.removeItem(CM_KEY); } catch {} }
 function cmBar(){ return cm() ? `<div class="cmbar">Commissioner mode<span>${route() === "commish" ? "" : `<a href="#commish">Tools</a>`}<button type="button" data-cm="off">Exit</button></span></div>` : ""; }
 
+// Games whose specials still need the commissioner's answers.
+function answerAlert(){
+  const due = S.games.filter(g => needsAnswers(g).length && Date.now() > Date.parse(g.tip) + 2 * 3600e3);
+  if (!due.length) return "";
+  return `<div class="alert"><b>Answer key needed</b>${due.map(g => `<a href="#grade-${g.id}">${g.home ? "vs" : "at"} ${esc(g.oppName)} · ${esc(md(g.tip))}: ${needsAnswers(g).length} to answer →</a>`).join("")}</div>`;
+}
 function commishView(){
   if (!S.me?.admin) return shell(`<div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Commissioner</span><h2>Commissioner mode</h2></div>
     <form class="card login" id="unlockForm">
@@ -726,9 +752,10 @@ function commishView(){
   const now = Date.now();
   const next = S.games.filter(g => Date.parse(g.tip) + 3.5 * 3600e3 > now).slice(0, 3);
   const past = S.games.filter(g => Date.parse(g.tip) + 3.5 * 3600e3 <= now && g.questions?.length).slice(-5).reverse();
-  const row = g => `<div class="trow"><div class="opp">${g.home ? "vs" : "at"} ${esc(g.oppName)}<small>${esc(fmtDay(g.tip))} · ${g.final ? "Graded" : g.questions?.length ? `${g.questions.length} lines posted` : "No lines yet"}</small></div>
-    ${locked(g) ? (g.questions?.length ? `<a href="#grade-${g.id}">${g.final ? "Fix stats" : "Enter stats"}</a>` : "") : `<a href="#setup-${g.id}">${g.questions?.length ? "Edit lines" : "Post lines"}</a>`}</div>`;
+  const row = g => { const n = needsAnswers(g).length; return `<div class="trow"><div class="opp">${g.home ? "vs" : "at"} ${esc(g.oppName)}<small>${esc(fmtDay(g.tip))} · ${n ? `${n} special${n === 1 ? "" : "s"} to answer` : isFinal(g) ? "Graded" : locked(g) ? "Waiting on ESPN" : g.questions?.length ? `${g.questions.length} lines posted` : "No lines yet"}</small></div>
+    ${locked(g) ? (g.questions?.length ? `<a href="#grade-${g.id}">${n ? "Answer key" : isFinal(g) ? "Fix stats" : "Enter stats"}</a>` : "") : `<a href="#setup-${g.id}">${g.questions?.length ? "Edit lines" : "Post lines"}</a>`}</div>`; };
   return shell(`<div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Signed in as ${esc(S.me?.name)}</span><h2>Commissioner tools</h2></div>
+    ${answerAlert()}
     <div class="card tools">
       <div><b>Check ESPN now</b><p class="note" style="margin:4px 0 0">Runs on its own every 15 minutes: updates the schedule, posts lines a day ahead, and grades finished games.</p></div>
       <button class="cta ghost" id="syncBtn" type="button">Check ESPN now</button>
@@ -855,7 +882,7 @@ app.addEventListener("submit", async e => {
     const gid = route().slice(6);
     const values = {}; app.querySelectorAll("[data-qv]").forEach(el => { if (el.value.trim() !== "") values[el.dataset.qv] = el.value; });
     const final = {winner: app.querySelector("#gw").value || null, porScore: app.querySelector("#gps").value, oppScore: app.querySelector("#gos").value, values};
-    try { await api("/api/admin/final/" + gid, {method: "PUT", body: JSON.stringify({final})}); toast("Graded"); location.hash = "game-" + gid; load(); }
+    try { await api("/api/admin/final/" + gid, {method: "PUT", body: JSON.stringify({final})}); toast("Saved. Points are updated."); location.hash = "game-" + gid; load(); }
     catch (err) { toast(err.message); }
   }
 });

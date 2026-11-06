@@ -155,7 +155,11 @@ async function api(req, env, url) {
     }
     if ((hit = path.match(/^\/api\/admin\/final\/(\d+)$/)) && m === "PUT") {
       const g = await getGame(env, hit[1]);
+      if (Date.now() < Date.parse(g.tip)) throw new HttpError(409, "The game hasn't started yet.");
       const f = (await body()).final || {};
+      // ESPN fills in the player stats after the final buzzer; until it has,
+      // a missing stat means "not in yet", not "didn't play".
+      const espnGraded = !!(g.final?.espnGraded || g.final?.source === "espn");
       const num = v => (v === null || v === "" || v === undefined || !Number.isFinite(Number(v))) ? null : Number(v);
       const values = {};
       for (const q of g.questions || []) {
@@ -166,8 +170,8 @@ async function api(req, env, url) {
       const final = {
         winner: f.winner === "POR" || f.winner === g.opp ? f.winner : null,
         porScore: num(f.porScore), oppScore: num(f.oppScore), values,
-        voided: (g.questions || []).filter(q => qKind(q) === "stat" && !(q.id in values)).map(q => q.id),
-        source: "manual", gradedAt: now(),
+        voided: espnGraded ? (g.questions || []).filter(q => qKind(q) === "stat" && !(q.id in values)).map(q => q.id) : [],
+        espnGraded, source: "manual", gradedAt: now(),
       };
       await env.DB.prepare("UPDATE games SET final = ?, updated_at = ? WHERE id = ?").bind(JSON.stringify(final), now(), g.id).run();
       return json({ ok: true });
@@ -252,11 +256,16 @@ export async function sync(env) {
   } catch (e) { log.push(`lines vs ${g.opp}: ${e.message}`); }
 
   // 3. Grade finished games that have lines and no final yet.
-  const toGrade = games.filter(g => g.questions?.length && !g.final && finals.has(g.id)).slice(0, MAX_GRADES_PER_RUN);
+  const toGrade = games.filter(g => g.questions?.length && finals.has(g.id) && !(g.final?.espnGraded || g.final?.source === "espn")).slice(0, MAX_GRADES_PER_RUN);
   for (const g of toGrade) try {
     const final = gradeFromSummary(await getJSON(`${ESPN}/summary?event=${g.id}`), g.questions, g.opp);
     if (!final) { log.push(`grade vs ${g.opp}: box score not final yet`); continue; }
-    await env.DB.prepare("UPDATE games SET final = ?, updated_at = ? WHERE id = ? AND final IS NULL").bind(JSON.stringify(final), now(), g.id).run();
+    // Keep any answers the commissioner already entered for their own questions.
+    for (const q of g.questions) if (qKind(q) !== "stat" && typeof g.final?.values?.[q.id] === "number") final.values[q.id] = g.final.values[q.id];
+    final.espnGraded = true;
+    const r = await env.DB.prepare("UPDATE games SET final = ?, updated_at = ? WHERE id = ? AND COALESCE(final, '') = ?")
+      .bind(JSON.stringify(final), now(), g.id, g.final ? JSON.stringify(g.final) : "").run();
+    if (!r.meta?.changes) { log.push(`grade vs ${g.opp}: changed while grading, will retry`); continue; }
     log.push(`graded vs ${g.opp}: POR ${final.porScore}–${final.oppScore}`);
   } catch (e) { log.push(`grade vs ${g.opp}: ${e.message}`); }
   if (log.length === 1) log.push("nothing else to do right now");
