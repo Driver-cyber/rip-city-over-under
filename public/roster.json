@@ -1,0 +1,371 @@
+{
+ "updated": "2026-11-06",
+ "season": "2026–27",
+ "coach": {
+  "name": "Micah Nori",
+  "blurb": "First-year head coach, 52, hired in June. This is his first head coaching job after years as Minnesota's top assistant. He took over a team that went 42-40 and made the playoffs for the first time since 2021.",
+  "src": "https://www.nba.com/news/blazers-hire-micah-nori-coach"
+ },
+ "lastSeason": "Last season: 42-40, in through the play-in as the 7th seed, then out in the first round to San Antonio.",
+ "players": [
+  {
+   "id": "4683021",
+   "n": "8",
+   "name": "Deni Avdija",
+   "pos": "Forward",
+   "ht": "6'8\"",
+   "age": 25,
+   "home": "Tel Aviv, Israel",
+   "role": "Starter",
+   "joined": "2024 trade from Washington",
+   "court": "The team's leading scorer so far and its first All-Star since Dame. Last February he became the first Israeli ever named an NBA All-Star.",
+   "fun": [
+    "Israeli basketball royalty in the making: he's the country's all-time leading NBA scorer and the only Israeli-born player with a triple-double.",
+    "Says he's not a party guy, but has a \"childish side\" that only the people closest to him get to see.",
+    "Very close with his parents, and his grandmother's kubbeh (an Iraqi dumpling dish) is his comfort food.",
+    "His dad played pro basketball in Yugoslavia, so Deni could have played for Serbia. He chose Israel because that's where his friends are."
+   ],
+   "src": [
+    "https://www.nba.com/news/deni-avdija-becomes-1st-israeli-named-to-nba-all-star-game",
+    "https://www.kveller.com/5-fun-facts-about-israeli-nba-all-star-deni-avdija/",
+    "https://www.ynetnews.com/magazine/article/rjyjxe7fzg"
+   ]
+  },
+  {
+   "id": "6606",
+   "n": "0",
+   "name": "Damian Lillard",
+   "pos": "Guard",
+   "ht": "6'2\"",
+   "age": 36,
+   "home": "Oakland, California",
+   "role": "Starter",
+   "joined": "Back home: re-signed July 2025",
+   "court": "The franchise legend, back in Portland after two years in Milwaukee. He tore his Achilles in the 2025 playoffs, sat out all of last season rehabbing, and is finally playing again.",
+   "fun": [
+    "When the game gets close, he taps his wrist: that's \"Dame Time.\"",
+    "He's a real rapper too, under the name Dame D.O.L.L.A., with several albums out.",
+    "Went to tiny Weber State in Utah because the big schools didn't recruit him.",
+    "On coming back: \"Never felt right not being home.\""
+   ],
+   "src": [
+    "https://www.kptv.com/2025/07/22/live-trail-blazers-officially-welcome-damian-lillard-back-portland-during-press-conference/",
+    "https://katu.com/sports/damian-lillard-is-back-on-the-court-for-the-trail-blazers-with-something-to-prove"
+   ]
+  },
+  {
+   "id": "4431736",
+   "n": "33",
+   "name": "Toumani Camara",
+   "pos": "Forward",
+   "ht": "6'7\"",
+   "age": 26,
+   "home": "Brussels, Belgium",
+   "role": "Starter",
+   "joined": "2023, in the original Dame trade",
+   "court": "The defensive pest. In 2025 he became the first Blazer in 20 years to make an All-Defensive team, then signed a four-year, $82 million extension.",
+   "fun": [
+    "Belgian! His mom is Belgian-Haitian and his dad is from Mali. His mom raised him on her own from when he was five.",
+    "His big brother Tidiane got him into basketball.",
+    "Moved to Florida by himself at 16 for high school, then played college ball at Dayton.",
+    "Only the second Belgian ever drafted into the NBA.",
+    "Keeps his personal life very private: no publicly known relationship."
+   ],
+   "src": [
+    "https://www.nba.com/news/blazers-toumani-camara-agree-on-4-year-extension",
+    "https://www.essentiallysports.com/nba-active-basketball-news-toumani-camara-ethnicity-and-nationality-exploring-the-rising-stars-roots-and-family-background"
+   ]
+  },
+  {
+   "id": "5105565",
+   "n": "23",
+   "name": "Donovan Clingan",
+   "pos": "Center",
+   "ht": "7'2\"",
+   "age": 22,
+   "home": "Bristol, Connecticut",
+   "role": "Starter",
+   "joined": "2024 draft, #7 pick",
+   "court": "The giant in the middle who blocks everything. Won two straight national titles at UConn before Portland drafted him.",
+   "fun": [
+    "Nickname: \"Cling Kong.\"",
+    "His college coach called him \"a happy, happy giant, but he is also a dog.\"",
+    "His dad says, \"Sometimes, he's a goofball. He's a really fun kid.\"",
+    "A hometown hero in Bristol, Connecticut, where everyone just knew him as \"the big kid.\"",
+    "Lost his mom when he was a teenager. He's talked about his dad and sister being his rocks."
+   ],
+   "src": [
+    "https://theday.com/sports/20230319/uconns-clingan-has-exceeded-expectations-in-his-first-season",
+    "https://abc11.com/post/2024-final-four-uconns-donovan-clingan-and-a-journey-of-dominance/14618314/"
+   ]
+  },
+  {
+   "id": "4279888",
+   "n": "1",
+   "name": "Ja Morant",
+   "pos": "Guard",
+   "ht": "6'2\"",
+   "age": 27,
+   "home": "Dalzell, South Carolina",
+   "role": "Starter",
+   "joined": "New! Traded from Memphis, June 2026",
+   "court": "The flashy new guy: a two-time All-Star famous for huge dunks. Portland got him from Memphis for Jerami Grant and Kris Murray.",
+   "fun": [
+    "On Portland: \"It's a very quiet spot, it's nice.\" Also: \"It rains a lot. I got took fishing in the rain.\"",
+    "Grew up practicing in a backyard court his dad built, with tractor tires for drills.",
+    "His dad Tee was high school teammates with NBA legend Ray Allen.",
+    "Has his own Nike shoe, the Ja 1.",
+    "Dad to a daughter, Kaari, who's been spotted courtside.",
+    "Comes with some baggage: two NBA suspensions in 2023 over guns in social media videos. He has talked openly about that reputation since the trade."
+   ],
+   "src": [
+    "https://katu.com/newsletter-daily/memphis-grizzlies-deal-ja-morant-to-portland-trail-blazers-for-grant-murray-espn-reports-oregon-sports-portland-trail-blazers-nba-basketball-north-american-basketball-association",
+    "https://clutchpoints.com/nba/portland-trail-blazers/blazers-news-ja-morant-getting-touch-nature-amid-quest-new-hobbies",
+    "https://larrybrownsports.com/basketball/ja-morants-new-hobbies-trade-surprise-fans/761654"
+   ]
+  },
+  {
+   "id": "3995",
+   "n": "5",
+   "name": "Jrue Holiday",
+   "pos": "Guard",
+   "ht": "6'4\"",
+   "age": 36,
+   "home": "Chatsworth, California",
+   "role": "Sixth man",
+   "joined": "Traded from Boston, June 2025",
+   "court": "The grown-up of the team: two NBA championships (Milwaukee and Boston) and two Olympic gold medals. Comes off the bench and does a bit of everything.",
+   "fun": [
+    "He was briefly a Blazer once before, in 2023, for three days, 17 hours and 57 minutes before being traded to Boston.",
+    "Married to Lauren Holiday, a soccer legend who won the 2015 Women's World Cup and two Olympic golds with the U.S.",
+    "Lauren once revealed that Jrue was napping when he found out he'd been traded.",
+    "Together they run a social justice fund that gives money to Black-owned businesses and nonprofits.",
+    "Basketball family: his brothers Justin and Aaron played in the NBA too."
+   ],
+   "src": [
+    "https://www.on3.com/pro/news/celtics-trade-all-star-guard-jrue-holiday-to-trail-blazers-in-exchange-for-anfernee-simons",
+    "https://www.si.com/nba/2023/10/01/celtics-jrue-holiday-trade-blazers-bucks-damian-lillard",
+    "https://www.cbssports.com/nba/news/bucks-traded-jrue-holiday-to-trail-blazers-while-he-was-napping-his-wife-reveals-in-scathing-instagram-post"
+   ]
+  },
+  {
+   "id": "4683678",
+   "n": "00",
+   "name": "Scoot Henderson",
+   "pos": "Guard",
+   "ht": "6'3\"",
+   "age": 22,
+   "home": "Marietta, Georgia",
+   "role": "Bench",
+   "joined": "2023 draft, #3 pick",
+   "court": "Super-quick young point guard who starts when Ja sits. Skipped college to go pro at 17.",
+   "fun": [
+    "His real name is Sterling. \"Scoot\" is because he scooted around on his butt as a baby, and his dad hands out nicknames.",
+    "One of seven kids, and three of his siblings played college basketball.",
+    "His high school retired his jersey together with his sister Crystal's.",
+    "Has his own Puma signature shoe.",
+    "Very private about dating: no publicly known girlfriend."
+   ],
+   "src": [
+    "https://www.complex.com/sneakers/a/orunychoi/scoot-henderson-puma-scoot-zeros-interview",
+    "https://en.wikipedia.org/wiki/Scoot_Henderson"
+   ]
+  },
+  {
+   "id": "5081727",
+   "n": "91",
+   "name": "Sidy Cissoko",
+   "pos": "Guard",
+   "ht": "6'6\"",
+   "age": 22,
+   "home": "Paris, France",
+   "role": "Bench",
+   "joined": "Signed February 2025",
+   "court": "High-energy French wing who went from a two-way contract to a real one last February. Plays a lot of minutes off the bench.",
+   "fun": [
+    "Wears #91, Dennis Rodman's old number.",
+    "His dad played basketball for Senegal at the 1980 Olympics.",
+    "Idolized Kyrie Irving as a kid because he was shorter than his teammates back then.",
+    "Moved to Spain at 13 to play youth ball."
+   ],
+   "src": [
+    "https://en.wikipedia.org/wiki/Sidy_Cissoko",
+    "https://www.sportskeeda.com/basketball/sidy-cissoko-father"
+   ]
+  },
+  {
+   "id": "4066211",
+   "n": "35",
+   "name": "Robert Williams III",
+   "pos": "Center",
+   "ht": "6'9\"",
+   "age": 29,
+   "home": "Shreveport, Louisiana",
+   "role": "Bench",
+   "joined": "2023, in the trade that sent Jrue to Boston",
+   "court": "Backup big man known for highlight blocks and alley-oop dunks.",
+   "fun": [
+    "Nickname \"Time Lord,\" because as a rookie he overslept his first press conference and missed his flight to his first practice.",
+    "His sister says his real family nickname is \"Boo Butt.\"",
+    "His old boss hated \"Time Lord\" and pitched \"Lob Williams\" instead. It didn't stick."
+   ],
+   "src": [
+    "https://www.nbcsportsboston.com/nba/boston-celtics/heres-how-robert-williams-earned-time-lord-nickname/208743/",
+    "https://www.nbcsportsboston.com/nba/boston-celtics/did-robert-williams-sister-just-squash-time-lord-nickname-debate/335693/"
+   ]
+  },
+  {
+   "id": "4578893",
+   "n": "27",
+   "name": "Vit Krejci",
+   "pos": "Guard",
+   "ht": "6'8\"",
+   "age": 26,
+   "home": "Strakonice, Czech Republic",
+   "role": "Bench",
+   "joined": "Traded from Atlanta, February 2026",
+   "court": "Tall shooter who comes in to hit threes.",
+   "fun": [
+    "Say it \"veet KRAY-chee.\"",
+    "Nickname: \"Heat Czech.\"",
+    "Played pro ball in Spain before the NBA."
+   ],
+   "src": [
+    "https://www.nba.com/blazers/news/trail-blazers-aquire-vit-krejci",
+    "https://www.kptv.com/2026/02/01/report-blazers-trade-with-hawks-sharp-shooter-krejci"
+   ]
+  },
+  {
+   "id": "4914336",
+   "n": "17",
+   "name": "Shaedon Sharpe",
+   "pos": "Guard",
+   "ht": "6'5\"",
+   "age": 23,
+   "home": "London, Ontario, Canada",
+   "role": "Injured",
+   "joined": "2022 draft, #7 pick",
+   "court": "Out with a torn meniscus from an August workout. He'll be re-evaluated around late February. Last season was his best: 20.8 points a game.",
+   "fun": [
+    "Canadian.",
+    "Went to Kentucky but never played a single college game before turning pro.",
+    "Known for ridiculous dunks in real games.",
+    "Signed a four-year, $90 million extension the same day as Toumani."
+   ],
+   "src": [
+    "https://www.nba.com/news/shaedon-sharpe-out-6-months-torn-meniscus",
+    "https://www.nbcsports.com/nba/news/portland-reaches-extensions-with-shaedon-sharpe-4-years-90-million-toumani-camara-4-years-82-million"
+   ]
+  },
+  {
+   "id": "5217746",
+   "n": "16",
+   "name": "Yang Hansen",
+   "pos": "Center",
+   "ht": "7'1\"",
+   "age": 21,
+   "home": "China",
+   "role": "Bench",
+   "joined": "2025 draft, #16 pick",
+   "court": "Second-year 7-footer from China who passes like a guard. People compare his style to Nikola Jokic, which flatters him.",
+   "fun": [
+    "American fans call him \"Handsome.\"",
+    "Favorite off-court activities: sleep, PS5 and food.",
+    "Asked who the most athletic player at camp was: \"Great question… everyone except me.\"",
+    "His laugh went viral, and fans compared it to Kawhi Leonard's and Borat's.",
+    "Says he was a \"fat boy\" as a kid until his dad pushed him into basketball."
+   ],
+   "src": [
+    "https://www.si.com/onsi/athlete-lifestyle/news/trail-blazers-stunner-yang-hansen-has-most-teenager-answer-ever-3-favorite-things",
+    "https://www.profootballnetwork.com/?p=998817",
+    "https://www.thescore.com/nba/news/3304978/"
+   ]
+  },
+  {
+   "id": "4066399",
+   "n": "9",
+   "name": "Micah Potter",
+   "pos": "Center",
+   "ht": "6'9\"",
+   "age": 28,
+   "home": "Mentor, Ohio",
+   "role": "Bench",
+   "joined": "Claimed off waivers, July 2026",
+   "court": "Backup big who can shoot. Picked up after Indiana let him go this summer.",
+   "fun": [
+    "Played college ball at Wisconsin."
+   ],
+   "src": [
+    "https://roundtable.io/sports/nba/trailblazers/news/trail-blazers-claim-former-pacers-big-man-micah-potter-off-waivers"
+   ]
+  },
+  {
+   "id": "4592435",
+   "n": "10",
+   "name": "Branden Carlson",
+   "pos": "Center",
+   "ht": "7'0\"",
+   "age": 27,
+   "home": "South Jordan, Utah",
+   "role": "Bench",
+   "joined": "Signed July 2026",
+   "court": "7-footer on a one-year deal, here for center depth after two seasons in Oklahoma City.",
+   "fun": [
+    "Owns a championship ring: he was on the 2025 champion Thunder.",
+    "Served a two-year church mission in Manchester, England, before college at Utah, and says he wouldn't be here without it."
+   ],
+   "src": [
+    "https://www.deseret.com/sports/2026/10/05/branden-carlson-talks-church-missions-portland-trail-blazers/",
+    "https://www.kptv.com/2026/07/01/report-blazers-signing-former-thunder-big-man-branden-carlson/"
+   ]
+  },
+  {
+   "id": "4706557",
+   "n": "11",
+   "name": "Chris Youngblood",
+   "pos": "Guard",
+   "ht": "6'4\"",
+   "age": 24,
+   "home": "Tuscaloosa, Alabama",
+   "role": "Deep bench",
+   "joined": "Young depth",
+   "court": "Young guard at the end of the bench.",
+   "fun": [
+    "Played college ball at Alabama, in his hometown."
+   ],
+   "src": []
+  },
+  {
+   "id": "4703889",
+   "n": "29",
+   "name": "Jayson Kent",
+   "pos": "Guard",
+   "ht": "6'8\"",
+   "age": 24,
+   "home": "Oak Forest, Illinois",
+   "role": "Deep bench",
+   "joined": "Young depth",
+   "court": "Long young wing at the end of the bench.",
+   "fun": [
+    "Played college ball at Texas."
+   ],
+   "src": []
+  },
+  {
+   "id": "4593043",
+   "n": "2",
+   "name": "John Tonje",
+   "pos": "Forward",
+   "ht": "6'5\"",
+   "age": 25,
+   "home": "Omaha, Nebraska",
+   "role": "Deep bench",
+   "joined": "Two-way contract",
+   "court": "Young scorer at the end of the bench.",
+   "fun": [
+    "Played college ball at Wisconsin, with Micah Potter's old program."
+   ],
+   "src": []
+  }
+ ]
+}
