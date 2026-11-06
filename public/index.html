@@ -205,7 +205,7 @@ html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 .cmbar a,.cmbar button{color:var(--bg);font-size:13px;font-weight:700;text-transform:none;letter-spacing:0}
 .cmbar button{border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);background:transparent;border-radius:8px;padding:6px 10px}
 .cmbar span{display:flex;gap:12px;align-items:center}
-pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:10px 12px;color:var(--muted)}
+pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border-radius:10px;padding:10px 12px;color:var(--muted)}
 .tools{display:flex;flex-direction:column;gap:10px}
 .trow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--line);font-size:15px}
 .trow:first-child{border-top:0}
@@ -213,12 +213,39 @@ pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;b
 .trow .opp small{display:block;color:var(--muted);font-size:13px}
 .trow a{font-size:14px;font-weight:600;white-space:nowrap}
 
-.qrow{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-.qtop{display:grid;grid-template-columns:1fr 40px;gap:8px}
-.qr2{display:grid;grid-template-columns:80px 1fr;gap:8px}
-.qr3{display:grid;grid-template-columns:1fr 96px;gap:8px;align-items:center}
+.qgroup{display:flex;flex-direction:column;gap:8px}
+.qgroup + .qgroup{margin-top:8px}
+.qrow{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.qrow.open{border-color:var(--ink)}
+.qsum{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 0}
+.qname{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:none;border:0;padding:8px 4px 8px 14px;min-height:52px;justify-content:center;color:var(--ink)}
+.qname b{font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.qname small{font-size:13px;color:var(--muted)}
+.step{display:grid;grid-template-columns:44px 56px 44px;height:46px;border:1px solid var(--line);border-radius:12px;overflow:hidden;flex:none}
+.step button{border:0;background:var(--bg);font-size:22px;font-weight:600;color:var(--ink)}
+.step button:active{background:var(--line)}
+.step input{border:0;border-radius:0;text-align:center;font-family:var(--mono);font-weight:700;font-size:18px;padding:0;background:var(--panel)}
+.ynchip{flex:none;font-size:13px;font-weight:700;color:var(--muted);padding:0 10px}
+.qedit{display:flex;flex-direction:column;gap:10px;padding:4px 12px 12px;border-top:1px solid var(--line);padding-top:12px}
+.qedit .seg button{min-height:46px;font-size:15px}
+.qedit textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;box-sizing:border-box;resize:vertical}
+.qedit input{padding:12px}
+.chips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.chips button{min-height:44px;border:1.5px solid var(--line);border-radius:10px;background:transparent;font-weight:700;font-size:14px;color:var(--ink);padding:0}
+.chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.qfoot{display:flex;justify-content:space-between;align-items:center}
+.qfoot .linkbtn{min-height:36px}
+.qfoot .linkbtn:last-child{color:var(--ink);font-weight:700;text-decoration:none}
 .addrow{display:flex;flex-wrap:wrap;gap:8px}
-.addrow button{flex:1 1 140px;min-height:46px;border:1.5px dashed var(--muted);border-radius:12px;background:transparent;font-weight:700;font-size:14px}
+.addrow button{flex:1 1 140px;min-height:48px;border:1.5px dashed var(--muted);border-radius:12px;background:transparent;font-weight:700;font-size:15px;color:var(--ink)}
+.savebar .cta{width:100%}
+.savebar{position:sticky;bottom:0;z-index:5;margin:0 -16px;padding:14px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,transparent,var(--bg) 22px)}
+@media (max-width:360px){.chips{grid-template-columns:repeat(3,1fr)}.step{grid-template-columns:40px 48px 40px}}
+a.trow{text-decoration:none;color:inherit;min-height:64px;box-sizing:border-box}
+a.trow:active{background:var(--bg)}
+.trow .pill{flex:none;border:1.5px solid var(--ink);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.trow .pill.hot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.trow .opp b{font-weight:600}
 .card.q.special{border-color:var(--ink);border-style:dashed}
 .swipe.special{border:2px dashed var(--ink)}
 .swipe .pl.long{font-family:var(--body);font-weight:700;font-size:clamp(26px,7vw,34px);line-height:1.15;text-transform:none;letter-spacing:0}
@@ -527,32 +554,39 @@ function setupView(id){
   if (!S.me?.admin || !g) return shell(`<div class="card">Only the commissioner can post lines.</div>`, {href:"", label:"Home"});
   if (locked(g)) return shell(`${boardHTML(g)}<div class="card">This game has started, so the lines are locked.</div>`, {href:"game-" + id, label:"Game"});
   if (!S.setup || S.setup.id !== id) {
-    S.setup = {id, rows: structuredClone(g.questions || []), roster: null};
+    S.setup = {id, rows: structuredClone(g.questions || []), roster: null, open: null};
     api("/api/admin/roster/" + id).then(r => { if (S.setup?.id === id) { S.setup.roster = r; readSetup(); render(); } }).catch(() => {});
   }
   const teams = ["POR", g.opp];
   const pickers = new Set([...(S.pickedBy[id] || []), ...(S.picks[uid()]?.[id] ? [uid()] : [])]);
   const lists = teams.map(t => `<datalist id="roster-${esc(t)}">${(S.setup.roster?.[t] || []).map(n => `<option value="${esc(n)}"></option>`).join("")}</datalist>`).join("");
-  const kindSel = (q, i) => `<select data-f="kind" data-i="${i}" id="k${i}" aria-label="Question type">${[["stat", "Player stat"], ["custom", "Custom over/under"], ["yn", "Yes / no"]].map(([v, l]) => `<option value="${v}"${qKind(q) === v ? " selected" : ""}>${l}</option>`).join("")}</select>`;
-  const r = (q, i) => {
-    const k = qKind(q);
-    const body = k === "stat"
-      ? `<div class="qr2"><select data-f="team" data-i="${i}" id="t${i}" aria-label="Team">${teams.map(t => `<option${q.team === t ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
-           <input data-f="player" data-i="${i}" id="p${i}" value="${esc(q.player || "")}" placeholder="Player" aria-label="Player" list="roster-${esc(q.team === g.opp ? g.opp : "POR")}" autocomplete="off"></div>
-         <div class="qr3"><select data-f="stat" data-i="${i}" id="s${i}" aria-label="Stat">${Object.keys(STATS).map(st => `<option${q.stat === st ? " selected" : ""}>${st}</option>`).join("")}</select>
-           <input data-f="line" data-i="${i}" id="l${i}" value="${esc(q.line ?? "")}" inputmode="decimal" placeholder="Line" aria-label="Line"></div>`
-      : `<input data-f="text" data-i="${i}" id="x${i}" value="${esc(q.text || "")}" maxlength="140" placeholder="${k === "yn" ? "Will Donovan Clingan get a technical foul?" : "Players wearing sweaters on the walk-in"}" aria-label="Question">
-         ${k === "custom" ? `<div class="qr3"><span class="note">Over/under line</span><input data-f="line" data-i="${i}" id="l${i}" value="${esc(q.line ?? "")}" inputmode="decimal" placeholder="3" aria-label="Line"></div>` : ""}`;
-    return `<div class="qrow"><div class="qtop">${kindSel(q, i)}<button class="x" type="button" data-del="${i}" aria-label="Remove question">×</button></div>${body}</div>`;
+  const group = q => qKind(q) !== "stat" ? "FUN" : q.team === g.opp ? g.opp : "POR";
+  const stepper = (q, i) => `<div class="step"><button type="button" data-step="-1" data-i="${i}" aria-label="Lower the line">−</button><input data-f="line" data-i="${i}" id="l${i}" value="${esc(q.line ?? "")}" inputmode="decimal" placeholder="–" aria-label="Line"><button type="button" data-step="1" data-i="${i}" aria-label="Raise the line">+</button></div>`;
+  const summary = q => qKind(q) === "stat"
+    ? `<b>${esc(q.player || "Choose a player")}</b><small>${esc(STATS[q.stat] || q.stat)}</small>`
+    : `<b>${esc(q.text || "Write the question")}</b><small>${isYN(q) ? "Yes or no" : "Over/under"}</small>`;
+  const editor = (q, i) => `<div class="qedit">${qKind(q) === "stat"
+    ? `<div class="seg">${teams.map(t => `<button type="button" data-set="team" data-v="${esc(t)}" data-i="${i}" aria-pressed="${group(q) === t}">${esc(t === "POR" ? "Blazers" : t)}</button>`).join("")}</div>
+       <input data-f="player" data-i="${i}" id="p${i}" value="${esc(q.player || "")}" placeholder="Player" aria-label="Player" list="roster-${esc(group(q))}" autocomplete="off" autocapitalize="words">
+       <div class="chips">${Object.keys(STATS).map(st => `<button type="button" data-set="stat" data-v="${st}" data-i="${i}" aria-pressed="${q.stat === st}">${st}</button>`).join("")}</div>`
+    : `<textarea data-f="text" data-i="${i}" id="x${i}" rows="2" maxlength="140" placeholder="${isYN(q) ? "Will Donovan Clingan get a technical foul?" : "Players wearing sweaters on the walk-in"}" aria-label="Question">${esc(q.text || "")}</textarea>`}
+    <div class="qfoot"><button type="button" class="linkbtn" data-del="${i}">Remove this question</button><button type="button" class="linkbtn" data-open="${i}">Done</button></div></div>`;
+  const row = (q, i) => { const open = S.setup.open === i;
+    return `<div class="qrow${open ? " open" : ""}"><div class="qsum"><button type="button" class="qname" data-open="${i}" aria-expanded="${open}">${summary(q)}</button>${isYN(q) ? `<span class="ynchip">Yes / No</span>` : stepper(q, i)}</div>${open ? editor(q, i) : ""}</div>`; };
+  const section = (key, title, adds) => {
+    const items = S.setup.rows.map((q, i) => [q, i]).filter(([q]) => group(q) === key);
+    return `<div class="qgroup"><span class="kicker">${esc(title)}${items.length ? ` · ${items.length}` : ""}</span>${items.map(([q, i]) => row(q, i)).join("")}<div class="addrow">${adds}</div></div>`;
   };
   return shell(`${boardHTML(g)}<h2>${g.questions?.length ? "Edit the lines" : "Post the lines"}</h2>
-    <p class="note" style="margin:0">${pickers.size ? `<b>${pickers.size} ${pickers.size === 1 ? "person has" : "people have"} already picked.</b> Changing or removing a question clears their pick on that one. New questions just show up for them.` : "Nobody has picked yet, so change anything you like."} Lines lock at tip-off.</p>
+    <p class="note" style="margin:0">${pickers.size ? `<b>${pickers.size} ${pickers.size === 1 ? "person has" : "people have"} already picked.</b> Changing or removing a question clears their pick on that one. New questions just show up for them.` : "Nobody has picked yet, so change anything you like."} Tap a question to change it, or use − and + for the line. Lines lock at tip-off.</p>
     ${!(g.questions || []).some(q => qKind(q) === "stat") ? `<button type="button" class="cta ghost" id="autoLines">Fill in the usual 10 from season averages</button>` : ""}
     ${lists}
-    <form class="form" id="setupForm">${S.setup.rows.length ? S.setup.rows.map(r).join("") : `<div class="card note">No questions yet.</div>`}
-      <div class="addrow"><button type="button" data-add="stat">+ Player stat</button><button type="button" data-add="custom">+ Custom over/under</button><button type="button" data-add="yn">+ Yes / no</button></div>
-      <p class="note" style="margin:0">Pick player names from the list so ESPN can grade them. You grade custom and yes/no questions yourself after the game.</p>
-      <button type="submit" class="cta">Save lines</button></form>`, {href:"game-" + id, label:"Game"});
+    <form class="form" id="setupForm">
+      ${section("POR", "Blazers", `<button type="button" data-add="stat" data-team="POR">+ Blazers line</button>`)}
+      ${section(g.opp, g.oppName, `<button type="button" data-add="stat" data-team="${esc(g.opp)}">+ ${esc(g.opp)} line</button>`)}
+      ${section("FUN", "Commissioner's specials", `<button type="button" data-add="custom">+ Custom over/under</button><button type="button" data-add="yn">+ Yes / no</button>`)}
+      <p class="note" style="margin:0">Pick player names from the suggestions so ESPN can grade them. You grade custom and yes/no questions yourself after the game.</p>
+      <div class="savebar"><button type="submit" class="cta">Save lines</button></div></form>`, {href:"game-" + id, label:"Game"});
 }
 
 function gradeView(id){
@@ -752,17 +786,23 @@ function commishView(){
   const now = Date.now();
   const next = S.games.filter(g => Date.parse(g.tip) + 3.5 * 3600e3 > now).slice(0, 3);
   const past = S.games.filter(g => Date.parse(g.tip) + 3.5 * 3600e3 <= now && g.questions?.length).slice(-5).reverse();
-  const row = g => { const n = needsAnswers(g).length; return `<div class="trow"><div class="opp">${g.home ? "vs" : "at"} ${esc(g.oppName)}<small>${esc(fmtDay(g.tip))} · ${n ? `${n} special${n === 1 ? "" : "s"} to answer` : isFinal(g) ? "Graded" : locked(g) ? "Waiting on ESPN" : g.questions?.length ? `${g.questions.length} lines posted` : "No lines yet"}</small></div>
-    ${locked(g) ? (g.questions?.length ? `<a href="#grade-${g.id}">${n ? "Answer key" : isFinal(g) ? "Fix stats" : "Enter stats"}</a>` : "") : `<a href="#setup-${g.id}">${g.questions?.length ? "Edit lines" : "Post lines"}</a>`}</div>`; };
+  const row = g => {
+    const n = needsAnswers(g).length, has = !!g.questions?.length;
+    const status = n ? `${n} special${n === 1 ? "" : "s"} to answer` : isFinal(g) ? "Graded" : locked(g) ? (has ? "Waiting on ESPN" : "No lines were posted") : has ? `${g.questions.length} lines posted` : "No lines yet";
+    const act = locked(g) ? (has ? [`grade-${g.id}`, n ? "Answer key" : isFinal(g) ? "Fix stats" : "Enter stats", n > 0] : null) : [`setup-${g.id}`, has ? "Edit lines" : "Post lines", !has];
+    const inner = `<div class="opp"><b>${g.home ? "vs" : "at"} ${esc(g.oppName)}</b><small>${esc(fmtDay(g.tip))} · ${status}</small></div>`;
+    return act ? `<a class="trow" href="#${act[0]}">${inner}<span class="pill${act[2] ? " hot" : ""}">${act[1]}</span></a>` : `<div class="trow">${inner}</div>`;
+  };
   return shell(`<div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Signed in as ${esc(S.me?.name)}</span><h2>Commissioner tools</h2></div>
     ${answerAlert()}
+    ${next.length ? `<span class="kicker">Coming up</span><div class="list">${next.map(row).join("")}</div>` : ""}
+    ${past.length ? `<span class="kicker">Recent</span><div class="list">${past.map(row).join("")}</div>` : ""}
+    <span class="kicker">ESPN</span>
     <div class="card tools">
-      <div><b>Check ESPN now</b><p class="note" style="margin:4px 0 0">Runs on its own every 15 minutes: updates the schedule, posts lines a day ahead, and grades finished games.</p></div>
+      <p class="note" style="margin:0">Checks on its own every 15 minutes: updates the schedule, posts lines a day ahead, and grades finished games.</p>
       <button class="cta ghost" id="syncBtn" type="button">Check ESPN now</button>
       ${S.syncLog ? `<pre class="log">${esc(S.syncLog)}</pre>` : ""}
     </div>
-    ${next.length ? `<span class="kicker">Coming up</span><div class="list">${next.map(row).join("")}</div>` : ""}
-    ${past.length ? `<span class="kicker">Recent</span><div class="list">${past.map(row).join("")}</div>` : ""}
     <span class="kicker">Players</span>
     <div class="card note" style="margin:0">${S.players.map(p => esc(p.name)).join(", ") || "Nobody yet."}<br>Share the site and the family passcode to add someone.</div>
     <button class="cta" type="button" data-cm="off">Back to playing</button>`, {href:"", label:"Home"});
@@ -824,11 +864,27 @@ app.addEventListener("click", async e => {
   if (add) {
     readSetup();
     const id = "q" + Date.now().toString(36), k = add.dataset.add;
-    S.setup.rows.push(k === "stat" ? {id, team: "POR", player: "", stat: "PTS", line: ""} : k === "custom" ? {id, kind: "custom", text: "", line: ""} : {id, kind: "yn", text: ""});
+    S.setup.rows.push(k === "stat" ? {id, team: add.dataset.team || "POR", player: "", stat: "PTS", line: ""} : k === "custom" ? {id, kind: "custom", text: "", line: ""} : {id, kind: "yn", text: ""});
+    S.setup.open = S.setup.rows.length - 1;
     render();
-    app.querySelector(`#${k === "stat" ? "p" : "x"}${S.setup.rows.length - 1}`)?.focus();
+    app.querySelector(`#${k === "stat" ? "p" : "x"}${S.setup.open}`)?.focus();
     return;
   }
+  const op = e.target.closest("#setupForm [data-open]");
+  if (op) {
+    readSetup(); const i = +op.dataset.open;
+    S.setup.open = S.setup.open === i ? null : i; render();
+    const q = S.setup.rows[i];
+    if (S.setup.open === i && !(q.player || q.text)) app.querySelector(`#${qKind(q) === "stat" ? "p" : "x"}${i}`)?.focus();
+    return;
+  }
+  const st = e.target.closest("#setupForm [data-step]");
+  if (st) {
+    readSetup(); const q = S.setup.rows[+st.dataset.i], n = Number(q.line);
+    q.line = String(Math.max(0, (q.line !== "" && Number.isFinite(n) ? n : 0) + +st.dataset.step)); render(); return;
+  }
+  const set = e.target.closest("#setupForm [data-set]");
+  if (set) { readSetup(); S.setup.rows[+set.dataset.i][set.dataset.set] = set.dataset.v; render(); return; }
   const al = e.target.closest("#autoLines");
   if (al) {
     readSetup(); al.disabled = true; al.textContent = "Getting season averages…";
@@ -836,23 +892,16 @@ app.addEventListener("click", async e => {
     catch (err) { toast(err.message); }
     render(); return;
   }
-  const del = e.target.closest("[data-del]"); if (del) { readSetup(); S.setup.rows.splice(+del.dataset.del, 1); render(); }
+  const del = e.target.closest("[data-del]"); if (del) { readSetup(); S.setup.rows.splice(+del.dataset.del, 1); S.setup.open = null; render(); }
 });
 function readSetup(){
-  app.querySelectorAll("#setupForm [data-f]").forEach(el => {
-    const row = S.setup.rows[+el.dataset.i]; if (!row) return;
-    if (el.dataset.f === "kind") { if (el.value === "stat") delete row.kind; else row.kind = el.value; }
-    else row[el.dataset.f] = el.value;
-  });
+  app.querySelectorAll("#setupForm [data-f]").forEach(el => { const row = S.setup.rows[+el.dataset.i]; if (row) row[el.dataset.f] = el.value; });
 }
-// Changing a question's type or team redraws its fields.
-app.addEventListener("change", e => {
-  const f = e.target.closest?.("#setupForm [data-f=kind], #setupForm [data-f=team]");
-  if (!f) return;
-  readSetup();
-  const row = S.setup.rows[+f.dataset.i];
-  if (f.dataset.f === "kind" && row) { const k = qKind(row); if (k === "stat") { row.team ||= "POR"; row.stat ||= "PTS"; } }
-  render();
+// Keep a question's summary in step with what's being typed.
+app.addEventListener("input", e => {
+  const f = e.target.closest?.("#setupForm [data-f=player], #setupForm [data-f=text]");
+  const b = f?.closest(".qrow")?.querySelector(".qname b");
+  if (b) b.textContent = f.value.trim() || (f.dataset.f === "player" ? "Choose a player" : "Write the question");
 });
 
 app.addEventListener("submit", async e => {
@@ -870,9 +919,11 @@ app.addEventListener("submit", async e => {
   }
   if (e.target.id === "setupForm") {
     readSetup();
-    const gid = S.setup.id;
+    const gid = S.setup.id, opp = gameById(gid)?.opp;
+    const rank = q => qKind(q) !== "stat" ? 2 : q.team === opp ? 1 : 0;
+    const questions = S.setup.rows.map((q, i) => [q, i]).sort((x, y) => rank(x[0]) - rank(y[0]) || x[1] - y[1]).map(([q]) => q);
     try {
-      const r = await api("/api/admin/lines/" + gid, {method: "PUT", body: JSON.stringify({questions: S.setup.rows})});
+      const r = await api("/api/admin/lines/" + gid, {method: "PUT", body: JSON.stringify({questions})});
       S.setup = null; toast(r.cleared ? `Lines saved. Cleared ${r.cleared} pick${r.cleared === 1 ? "" : "s"} on changed questions.` : "Lines saved");
       location.hash = "game-" + gid; load();
     }

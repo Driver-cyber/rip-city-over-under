@@ -278,7 +278,7 @@ export async function sync(env) {
 async function statLines(g, log, cache = {}) {
   if (cache.averages === undefined) {
     try { cache.averages = parseAverages(await getJSON(AVERAGES)); }
-    catch (e) { cache.averages = null; log.push(`season averages: ${e.message}; using recent box scores instead`); }
+    catch (e) { cache.averages = null; console.log("season averages:", e.message); log.push("season averages: ESPN didn't share them, so lines use the last 10 box scores"); }
   }
   const pool = cache.averages || await recentAverages(["POR", g.opp]);
   let out = [];
