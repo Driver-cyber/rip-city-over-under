@@ -62,6 +62,35 @@ h2{font-size:28px;letter-spacing:.4px}
 .menu .mi.quiet{font-size:15px;font-weight:500;color:var(--muted)}
 .menu .sep{height:6px;background:var(--bg)}
 @media (prefers-reduced-motion:reduce){.menu,.menu nav{transition:none}}
+.yb-cover{background:var(--band);color:var(--band-ink);border-radius:18px;padding:22px 18px 18px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden}
+.yb-cover .kicker{color:color-mix(in srgb,var(--band-ink) 62%,transparent)}
+.yb-cover h1{font-size:clamp(52px,15vw,72px);line-height:.85}
+.yb-cover h1 span{color:var(--accent);display:block}
+.yb-cover p{margin:0;font-size:15px;color:color-mix(in srgb,var(--band-ink) 80%,transparent)}
+.nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.nums button{min-height:52px;border:1.5px solid var(--line);background:var(--panel);border-radius:12px;font-family:var(--display);font-weight:900;font-size:24px;color:var(--ink);padding:0}
+.nums button.new{border-color:var(--accent)}
+.nums button:active{background:var(--ink);color:var(--bg)}
+.pcard{background:var(--panel);border:1px solid var(--line);border-radius:20px;overflow:hidden;scroll-margin-top:16px}
+.pcard.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 4px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
+.phead{position:relative;background:var(--band);color:var(--band-ink);display:flex;align-items:flex-end;min-height:150px;padding:0 16px}
+.phead .big{position:absolute;right:10px;top:-6px;font-family:var(--display);font-weight:900;font-size:150px;line-height:1;color:var(--accent);opacity:.9;letter-spacing:-2px}
+.phead img{position:relative;width:170px;height:124px;object-fit:cover;object-position:top;margin-top:26px}
+.pname{padding:14px 16px 0;display:flex;flex-direction:column;gap:6px}
+.pname h3{margin:0;font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:34px;line-height:.95}
+.pname .meta{font-size:14px;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags .chip.hot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pbody{padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.pbody h4{margin:0;font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+.pbody p{margin:0}
+.pbody ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.pfoot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding:12px 16px}
+.pfoot a{color:var(--muted)}
+.pfoot a.ig{color:var(--ink);font-weight:700;font-size:14px}
+.pcard.mini .phead{min-height:96px}.pcard.mini .phead .big{font-size:96px}.pcard.mini .phead img{width:110px;height:80px;margin-top:16px}
+.pcard.mini .pname h3{font-size:26px}
 .stripes{display:flex;gap:5px;height:6px}
 .stripes i{flex:1;border-radius:3px;background:var(--ink)}
 .stripes i:nth-child(2){background:var(--accent)}
@@ -475,6 +504,10 @@ function homeView(){
     <div style="min-width:0"><div class="kicker">Season leaderboard</div><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">${lead}</div></div>
     <span aria-hidden="true" style="font-size:20px">→</span>
   </a>
+  <a class="card" href="#roster" style="display:flex;align-items:center;justify-content:space-between;gap:12px;text-decoration:none">
+    <div style="min-width:0"><div class="kicker">Roster yearbook</div><div style="margin-top:4px">Wait, who's #91? Meet the new faces.</div></div>
+    <span aria-hidden="true" style="font-size:20px">→</span>
+  </a>
   ${upcoming.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="kicker">Coming up</span><div class="list">${upcoming.map(listRow).join("")}</div></div>` : ""}
   ${recent.length ? `<div style="display:flex;flex-direction:column;gap:8px"><span class="kicker">Recent</span><div class="list">${recent.map(listRow).join("")}</div></div>` : ""}
   <a class="cta ghost" href="#schedule">Full schedule</a>`;
@@ -827,6 +860,46 @@ function commishView(){
     <button class="cta" type="button" data-cm="off">Back to playing</button>`, {href:"", label:"Home"});
 }
 
+/* ---------- roster yearbook (data in public/roster.json, refreshed by hand) ---------- */
+S.roster = null;
+function loadRoster(){
+  if (loadRoster.p) return; loadRoster.p = fetch("roster.json", {cache: "no-cache"}).then(r => r.json()).then(d => { S.roster = d; if (route() === "roster") render(); }).catch(() => { loadRoster.p = null; S.roster = {error: true}; if (route() === "roster") render(); });
+}
+const isNew = p => /2025|2026/.test(p.joined);
+function playerCard(p, mini){
+  const ig = "https://www.google.com/search?q=" + encodeURIComponent(p.name + " instagram");
+  return `<article class="pcard${mini ? " mini" : ""}" id="pl-${esc(p.n)}">
+    <div class="phead"><span class="big" aria-hidden="true">${esc(p.n)}</span><img src="https://a.espncdn.com/i/headshots/nba/players/full/${esc(p.id)}.png" alt="" loading="lazy" onerror="this.remove()"></div>
+    <div class="pname"><h3>${esc(p.name)}</h3><span class="meta">#${esc(p.n)} · ${esc(p.pos)} · ${esc(p.ht)} · ${esc(p.age)} · ${esc(p.home)}</span>
+      <div class="tags"><span class="chip">${esc(p.role)}</span><span class="chip${isNew(p) ? " hot" : ""}">${esc(p.joined)}</span></div></div>
+    <div class="pbody"><h4>On the court</h4><p>${esc(p.court)}</p>
+      ${p.fun?.length ? `<h4>Off the court</h4><ul>${p.fun.map(f => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}</div>
+    <div class="pfoot"><a class="ig" href="${ig}" target="_blank" rel="noopener">Find their Instagram ↗</a>${(p.src || []).map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">Source ${i + 1}</a>`).join("")}</div>
+  </article>`;
+}
+function rosterView(){
+  loadRoster();
+  const d = S.roster;
+  if (!d) return shell(`<p class="muted">Loading the roster…</p>`, {href:"", label:"Home"});
+  if (d.error) return shell(`<div class="card">Couldn't load the roster. Pull down to try again.</div>`, {href:"", label:"Home"});
+  const ps = d.players, by = role => ps.filter(p => role.includes(p.role));
+  const nums = [...ps].sort((a, b) => (+a.n - +b.n) || a.n.length - b.n.length);
+  const sec = (title, list, mini) => list.length ? `<span class="kicker">${esc(title)}</span>${list.map(p => playerCard(p, mini)).join("")}` : "";
+  return shell(`<div class="yb-cover"><span class="kicker">Rip City Over/Under presents</span><h1>Roster<span>Yearbook</span></h1>
+      <p>Everyone on the ${esc(d.season)} Blazers, with the stuff they don't put on the scoreboard. ${esc(d.lastSeason)}</p>
+      <span class="kicker">Updated ${esc(md(d.updated + "T20:00:00Z"))}</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px"><span class="kicker">Wait, who's number…?</span>
+      <div class="nums">${nums.map(p => `<button type="button" class="${isNew(p) ? "new" : ""}" data-jump="${esc(p.n)}" aria-label="#${esc(p.n)} ${esc(p.name)}">${esc(p.n)}</button>`).join("")}</div>
+      <span class="note">Red outline = new since the 2024–25 season.</span></div>
+    ${sec("The starting five", by(["Starter"]))}
+    ${sec("Off the bench", by(["Sixth man", "Bench"]))}
+    ${sec("On the mend", by(["Injured"]))}
+    ${sec("End of the bench", by(["Deep bench"]), true)}
+    <span class="kicker">The coach</span>
+    <div class="card"><h3 style="margin:0 0 6px;font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:28px">${esc(d.coach.name)}</h3><p style="margin:0">${esc(d.coach.blurb)}</p><p class="note" style="margin:8px 0 0"><a href="${esc(d.coach.src)}" target="_blank" rel="noopener" style="color:inherit">Source</a></p></div>
+    <p class="note" style="margin:0">Fun facts come from news stories and interviews (sources on each card). Relationships are only listed when they're public and confirmed.</p>`, {href:"", label:"Home"});
+}
+
 /* ---------- menu ---------- */
 const menuEl = document.getElementById("menu");
 function menuBtn(){ return `<button class="menubtn" type="button" data-menu aria-label="Menu" aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button>`; }
@@ -837,6 +910,7 @@ function menuItems(){
     ["", "Home"],
     ["results", "Results & leaderboard"],
     ["schedule", "Full schedule"],
+    ["roster", "Roster yearbook", "Who's who"],
     S.me?.admin ? ["commish", cm() ? "Commissioner tools" : "Commissioner mode", n ? `${n} to grade` : ""] : ["commish", "Commissioner", "Passcode"],
   ];
 }
@@ -878,6 +952,7 @@ function render(){
   else if (r.startsWith("grade-")) html = gradeView(r.slice(6));
   else if (r === "results") html = resultsView();
   else if (r === "schedule") html = scheduleView();
+  else if (r === "roster") html = rosterView();
   else if (r === "commish") html = commishView();
   else html = homeView();
   const keepScroll = render.last === r;
@@ -895,6 +970,8 @@ function signOut(){ setCommish(false); S.token = null; S.me = null; S.loaded = f
 
 app.addEventListener("click", async e => {
   if (e.target.closest("[data-menu]")) return openMenu();
+  const jp = e.target.closest("[data-jump]");
+  if (jp) { const el = document.getElementById("pl-" + jp.dataset.jump); if (el) { el.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block: "start"}); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); } return; }
   const id = route().slice(5);
   const w = e.target.closest("[data-win]"); if (w) return setPick(id, "winner", null, w.dataset.win);
   const q = e.target.closest("[data-q]"); if (q) return setPick(id, "q", q.dataset.q, q.dataset.v);
