@@ -43,6 +43,7 @@ function safeEqual(a, b) {
   return d === 0;
 }
 async function me(req, env) {
+  if (!env.TOKEN_SECRET) throw new HttpError(503, "The game isn't set up yet.");
   const tok = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
   const [id, sig] = tok.split(".");
   if (!id || !sig || !safeEqual(sig, await hmac(env, id))) throw new HttpError(401, "Sign in to play.");
@@ -61,6 +62,8 @@ async function api(req, env, url) {
     const { name, passcode } = await body();
     const clean = String(name || "").trim().replace(/\s+/g, " ");
     if (!clean || clean.length > 20) throw new HttpError(400, "Enter a name up to 20 characters.");
+    if (!env.PASSCODE || !env.TOKEN_SECRET) throw new HttpError(503, "The game isn't set up yet.");
+    if (!passcode) throw new HttpError(403, "Enter the family passcode.");
     const admin = !!env.ADMIN_PASSCODE && safeEqual(passcode, env.ADMIN_PASSCODE);
     if (!admin && !safeEqual(passcode, env.PASSCODE)) throw new HttpError(403, "That passcode isn't right.");
     const key = clean.toLowerCase();
