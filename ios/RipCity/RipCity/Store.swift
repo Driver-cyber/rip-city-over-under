@@ -37,7 +37,8 @@ final class Store {
     var rosterFailed = false
 
     private var pending: [String] = []
-    private var writing = false
+    private var saving: String?           // the game whose picks are on the wire
+    private var saves = 0                 // finished saves, so a slow load can tell it's stale
     private var saveTask: Task<Void, Never>?
 
     var uid: String? { me?.id }
@@ -91,19 +92,23 @@ final class Store {
     }
 
     func signOut() {
-        token = nil; me = nil; loaded = false; games = []; picks = [:]; path = []
+        saveTask?.cancel(); pending = []
+        token = nil; me = nil; loaded = false; games = []; players = []; picks = [:]; pickedBy = [:]; path = []
         Keychain.save(nil)
     }
 
     func load() async {
         guard token != nil else { return }
+        let before = saves
         do {
             let s = try JSONDecoder().decode(AppState.self, from: try await request("api/state"))
-            // Keep picks made since the last save until the server has them.
+            // Keep picks the server doesn't have yet: waiting to save, saving now,
+            // or saved while this load was on its way back.
             let mine = uid.flatMap { picks[$0] }
+            let keep = saves != before ? mine.map { Array($0.keys) } ?? [] : pending + [saving].compactMap { $0 }
             me = s.me; games = s.games; players = s.players; pickedBy = s.pickedBy ?? [:]
             picks = s.picks ?? [:]
-            if let mine, let id = uid { for gid in pending { picks[id, default: [:]][gid] = mine[gid] } }
+            if let mine, let id = uid { for gid in keep { picks[id, default: [:]][gid] = mine[gid] } }
             loaded = true; offline = false
         } catch {
             if token != nil { offline = true }
@@ -136,22 +141,30 @@ final class Store {
         p.q = q
         picks[id, default: [:]][gid] = p
         if !pending.contains(gid) { pending.append(gid) }
+        // Each tap restarts the wait, but never cancels a save already on the
+        // wire: the save runs in its own task, which the next tap can't reach.
         saveTask?.cancel()
-        saveTask = Task { try? await Task.sleep(for: .milliseconds(400)); await self.savePicks() }
+        saveTask = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            Task { await self.savePicks() }
+        }
     }
 
     private func savePicks() async {
-        guard !writing, !pending.isEmpty, let id = uid else { return }
-        writing = true
+        guard saving == nil, !pending.isEmpty, let id = uid else { return }
         let gid = pending.removeFirst()
+        saving = gid
         let p = picks[id]?[gid] ?? Pick(winner: nil, q: [:])
         do {
             let body = try JSONEncoder().encode(p)
             _ = try await request("api/picks/\(gid)", method: "PUT", body: body)
+            saves += 1; saving = nil
         } catch {
+            // Show the server's copy again, so the screen matches what counts.
+            saving = nil
             show(error.localizedDescription); await load()
         }
-        writing = false
         if !pending.isEmpty { await savePicks() }
     }
 

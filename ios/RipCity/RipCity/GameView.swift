@@ -266,8 +266,8 @@ struct DeckView: View {
                     }
                 }
                 ZStack {
-                    if i + 1 < items.count { card(items[i + 1]).scaleEffect(0.94).offset(y: 10).opacity(0.7).allowsHitTesting(false) }
-                    card(items[i])
+                    if i + 1 < items.count { card(items[i + 1], lean: 0).scaleEffect(0.94).offset(y: 10).opacity(0.7).allowsHitTesting(false) }
+                    card(items[i], lean: drag.width)
                         .offset(x: drag.width, y: drag.height * 0.25)
                         .rotationEffect(.degrees(Double(drag.width) / 18))
                         .gesture(DragGesture()
@@ -341,9 +341,9 @@ struct DeckView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.27) { var t = Transaction(); t.disablesAnimations = true; withTransaction(t) { commit() } }
     }
 
-    @ViewBuilder private func card(_ it: Item) -> some View {
+    /// `lean` is how far the card is being dragged; only the top card leans.
+    @ViewBuilder private func card(_ it: Item, lean: CGFloat) -> some View {
         let pk = pick(it)
-        let lean = drag.width
         let special: Bool = { if case .q(let q) = it { return q.k != .stat }; return false }()
         VStack(alignment: .leading) {
             switch it {
