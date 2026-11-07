@@ -1050,7 +1050,7 @@ app.addEventListener("submit", async e => {
     } catch (err) { S.loginErr = err.message; app.querySelector("#lerr").textContent = err.message; }
   }
   if (e.target.id === "unlockForm") {
-    try { const r = await api("/api/unlock", {method: "POST", body: JSON.stringify({passcode: app.querySelector("#cp").value})}); S.me = r.me; setCommish(true); toast("Commissioner mode on"); await load(); render(); }
+    try { const r = await api("/api/unlock", {method: "POST", body: JSON.stringify({passcode: app.querySelector("#cp").value})}); S.token = r.token; store.set(r.token); S.me = r.me; setCommish(true); toast("Commissioner mode on"); await load(); render(); }
     catch (err) { app.querySelector("#cerr").textContent = err.message; }
   }
   if (e.target.id === "setupForm") {
