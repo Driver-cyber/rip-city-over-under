@@ -32,7 +32,10 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 });
 const now = () => new Date().toISOString();
 
-/* ---------- auth: token = playerId.hmac(playerId) ---------- */
+/* ---------- auth ----------
+   A player's token is "id.sig". Entering the commissioner passcode gives
+   "id.c.sig" instead, and only that kind opens the commissioner tools, so
+   signing in under the commissioner's name with the family passcode doesn't. */
 async function hmac(env, msg) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.TOKEN_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
@@ -44,14 +47,17 @@ function safeEqual(a, b) {
   for (let i = 0; i < Math.max(a.length, b.length); i++) d |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   return d === 0;
 }
+const signed = async (env, id, admin) => admin ? `${id}.c.${await hmac(env, "c:" + id)}` : `${id}.${await hmac(env, id)}`;
 async function me(req, env) {
   if (!env.TOKEN_SECRET) throw new HttpError(503, "The game isn't set up yet.");
   const tok = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-  const [id, sig] = tok.split(".");
-  if (!id || !sig || !safeEqual(sig, await hmac(env, id))) throw new HttpError(401, "Sign in to play.");
+  const parts = tok.split(".");
+  const admin = parts.length === 3 && parts[1] === "c";
+  const id = parts[0], sig = parts[parts.length - 1];
+  if (!id || !sig || parts.length !== (admin ? 3 : 2) || !safeEqual(sig, await hmac(env, admin ? "c:" + id : id))) throw new HttpError(401, "Sign in to play.");
   const p = await env.DB.prepare("SELECT id, name, is_admin FROM players WHERE id = ?").bind(id).first();
   if (!p) throw new HttpError(401, "Sign in to play.");
-  return { id: p.id, name: p.name, admin: !!p.is_admin };
+  return { id: p.id, name: p.name, admin: admin && !!p.is_admin };
 }
 
 /* ---------- API ---------- */
@@ -77,7 +83,7 @@ async function api(req, env, url) {
       await env.DB.prepare("UPDATE players SET is_admin = 1 WHERE id = ?").bind(p.id).run();
       p.is_admin = 1;
     }
-    return json({ token: p.id + "." + await hmac(env, p.id), me: { id: p.id, name: p.name, admin: !!p.is_admin } });
+    return json({ token: await signed(env, p.id, admin), me: { id: p.id, name: p.name, admin } });
   }
 
   const who = await me(req, env);
@@ -89,7 +95,7 @@ async function api(req, env, url) {
     const { passcode } = await body();
     if (!env.ADMIN_PASSCODE || !passcode || !safeEqual(passcode, env.ADMIN_PASSCODE)) throw new HttpError(403, "That isn't the commissioner passcode.");
     await env.DB.prepare("UPDATE players SET is_admin = 1 WHERE id = ?").bind(who.id).run();
-    return json({ me: { ...who, admin: true } });
+    return json({ token: await signed(env, who.id, true), me: { ...who, admin: true } });
   }
 
   let hit;
