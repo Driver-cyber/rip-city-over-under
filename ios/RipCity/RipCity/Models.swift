@@ -45,11 +45,14 @@ struct Game: Codable, Identifiable, Equatable {
     let oppName: String
     var questions: [Question]?
     var final: Final?
+    var reopened: Bool?          // the commissioner reopened picks after tip-off
 
     var tipDate: Date { Fmt.parse(tip) }
     var qs: [Question] { questions ?? [] }
     var hasLines: Bool { !qs.isEmpty }
-    var locked: Bool { Date() >= tipDate }
+    var started: Bool { Date() >= tipDate }
+    var isReopened: Bool { started && reopened == true && !isFinal }
+    var locked: Bool { started && !isReopened }
     var isFinal: Bool { final?.winner != nil }
     var isToday: Bool { Fmt.day(tipDate) == Fmt.day(Date()) }
     var vsAt: String { home ? "vs" : "at" }

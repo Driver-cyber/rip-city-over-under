@@ -291,8 +291,10 @@ pre.log{margin:0;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;o
 a.trow{text-decoration:none;color:inherit;min-height:64px;box-sizing:border-box}
 a.trow:active{background:var(--bg)}
 .trow .pill{flex:none;border:1.5px solid var(--ink);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+button.pill{background:none;color:var(--ink);font:inherit;cursor:pointer}
 .trow .pill.hot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .trow .opp b{font-weight:600}
+.trow.sub{border-top:0;padding-top:0}
 .card.q.special{border-color:var(--ink);border-style:dashed}
 .swipe.special{border:2px dashed var(--ink)}
 .swipe .pl.long{font-family:var(--body);font-weight:700;font-size:clamp(26px,7vw,34px);line-height:1.15;text-transform:none;letter-spacing:0}
@@ -339,7 +341,9 @@ const fmtDay = d => new Date(d).toLocaleDateString("en-US",{timeZone:TZ,weekday:
 const fmtTime = d => new Date(d).toLocaleTimeString("en-US",{timeZone:TZ,hour:"numeric",minute:"2-digit"}) + " PT";
 const dow = d => new Date(d).toLocaleDateString("en-US",{timeZone:TZ,weekday:"short"});
 const md = d => new Date(d).toLocaleDateString("en-US",{timeZone:TZ,month:"short",day:"numeric"});
-const locked = g => Date.now() >= Date.parse(g.tip);
+const started = g => Date.now() >= Date.parse(g.tip);
+const reopened = g => started(g) && g.reopened && !isFinal(g);
+const locked = g => started(g) && !reopened(g);
 const isToday = g => ptDay(g.tip) === ptDay(Date.now());
 const fmtLine = n => Number.isInteger(n) ? String(n) : n.toFixed(1);
 const signed = n => n > 0 ? "+" + n : n < 0 ? "−" + Math.abs(n) : "0";
@@ -560,8 +564,8 @@ function gameView(id){
 
   const myScore = fin ? scoreGame(uid(), id) : null;
   const head = lk
-    ? `<div class="note">${fin ? (myScore ? `Your game: <b class="num">${signed(myScore.pts)}</b> (${myScore.w}–${myScore.l}${myScore.p ? `–${myScore.p}` : ""})` : "Final.") : "Picks locked at tip-off. Results go up automatically after the game."}${cm() ? ` <a href="#grade-${id}">${needsAnswers(g).length ? "Enter the answer key" : fin ? "Fix final stats" : "Enter final stats"}</a>` : ""}</div>`
-    : `<div class="progress"><span class="num">${done}/${total}</span><div class="bar"><i style="width:${done / total * 100}%"></i></div><span class="muted">${others.length ? `${esc(others.map(nameOf).join(", "))} ${others.length > 1 ? "have" : "has"} picked` : "Locks at tip-off"}</span></div>`;
+    ? `<div class="note">${fin ? (myScore ? `Your game: <b class="num">${signed(myScore.pts)}</b> (${myScore.w}–${myScore.l}${myScore.p ? `–${myScore.p}` : ""})` : "Final.") : "Picks locked at tip-off. Results go up automatically after the game."}${cm() ? ` <a href="#grade-${id}">${needsAnswers(g).length ? "Enter the answer key" : fin ? "Fix final stats" : "Enter final stats"}</a>${fin?.winner ? "" : ` · <button class="linkbtn" type="button" data-reopen="${id}" data-v="1">Reopen picks</button>`}` : ""}</div>`
+    : `${reopened(g) ? `<div class="note"><b>Picks are open again</b> while you catch up on the game.${cm() ? ` <button class="linkbtn" type="button" data-reopen="${id}" data-v="0">Close picks</button>` : ""}</div>` : ""}<div class="progress"><span class="num">${done}/${total}</span><div class="bar"><i style="width:${done / total * 100}%"></i></div><span class="muted">${others.length ? `${esc(others.map(nameOf).join(", "))} ${others.length > 1 ? "have" : "has"} picked` : "Locks at tip-off"}</span></div>`;
 
   const por = qs.filter(q => qKind(q) === "stat" && q.team === "POR"), opp = qs.filter(q => qKind(q) === "stat" && q.team !== "POR"), fun = qs.filter(q => qKind(q) !== "stat");
   return shell(`${boardHTML(g)}${banner()}${!lk ? viewToggle() : ""}${head}${winCard}
@@ -644,6 +648,7 @@ function setupView(id){
 function gradeView(id){
   const g = gameById(id);
   if (!S.me?.admin || !g?.questions?.length) return shell(`<div class="card">Only the commissioner can enter final stats.</div>`, {href:"", label:"Home"});
+  if (reopened(g)) return shell(`${boardHTML(g)}<div class="card">Picks are open again for this game. <button class="linkbtn" type="button" data-reopen="${id}" data-v="0">Close picks</button> before grading.</div>`, {href:"game-" + id, label:"Game"});
   if (!locked(g)) return shell(`${boardHTML(g)}<div class="card">This game hasn't started yet. Come back after it's over to grade it.</div>`, {href:"game-" + id, label:"Game"});
   const fin = g.final || {}, espn = !!(fin.espnGraded || fin.source === "espn");
   const specials = g.questions.filter(q => qKind(q) !== "stat"), stats = g.questions.filter(q => qKind(q) === "stat");
@@ -840,10 +845,12 @@ function commishView(){
   const past = S.games.filter(g => Date.parse(g.tip) + 3.5 * 3600e3 <= now && g.questions?.length).slice(-5).reverse();
   const row = g => {
     const n = needsAnswers(g).length, has = !!g.questions?.length;
-    const status = n ? `${n} special${n === 1 ? "" : "s"} to answer` : isFinal(g) ? "Graded" : locked(g) ? (has ? "Waiting on ESPN" : "No lines were posted") : has ? `${g.questions.length} lines posted` : "No lines yet";
+    const status = reopened(g) ? "Picks reopened" : n ? `${n} special${n === 1 ? "" : "s"} to answer` : isFinal(g) ? "Graded" : locked(g) ? (has ? "Waiting on ESPN" : "No lines were posted") : has ? `${g.questions.length} lines posted` : "No lines yet";
     const act = locked(g) ? (has ? [`grade-${g.id}`, n ? "Answer key" : isFinal(g) ? "Fix stats" : "Enter stats", n > 0] : null) : [`setup-${g.id}`, has ? "Edit lines" : "Post lines", !has];
     const inner = `<div class="opp"><b>${g.home ? "vs" : "at"} ${esc(g.oppName)}</b><small>${esc(fmtDay(g.tip))} · ${status}</small></div>`;
-    return act ? `<a class="trow" href="#${act[0]}">${inner}<span class="pill${act[2] ? " hot" : ""}">${act[1]}</span></a>` : `<div class="trow">${inner}</div>`;
+    // A started, ungraded game can be reopened for late pickers, then closed again.
+    const toggle = started(g) && has && !isFinal(g) ? `<div class="trow sub"><div class="opp"><small>${reopened(g) ? "Picks are open again" : "Watching on delay?"}</small></div><button class="pill${reopened(g) ? " hot" : ""}" type="button" data-reopen="${g.id}" data-v="${reopened(g) ? 0 : 1}">${reopened(g) ? "Close picks" : "Reopen picks"}</button></div>` : "";
+    return (act ? `<a class="trow" href="#${act[0]}">${inner}<span class="pill${act[2] ? " hot" : ""}">${act[1]}</span></a>` : `<div class="trow">${inner}</div>`) + toggle;
   };
   return shell(`<div style="display:flex;flex-direction:column;gap:6px"><span class="kicker">Signed in as ${esc(S.me?.name)}</span><h2>Commissioner tools</h2></div>
     ${answerAlert()}
@@ -970,6 +977,13 @@ function signOut(){ setCommish(false); S.token = null; S.me = null; S.loaded = f
 
 app.addEventListener("click", async e => {
   if (e.target.closest("[data-menu]")) return openMenu();
+  const ro = e.target.closest("[data-reopen]");
+  if (ro) {
+    const open = ro.dataset.v === "1"; ro.disabled = true;
+    try { await api("/api/admin/open/" + ro.dataset.reopen, {method: "PUT", body: JSON.stringify({open})}); toast(open ? "Picks are open again" : "Picks closed"); await load(); }
+    catch (err) { toast(err.message); }
+    render(); return;
+  }
   const jp = e.target.closest("[data-jump]");
   if (jp) { const el = document.getElementById("pl-" + jp.dataset.jump); if (el) { el.scrollIntoView({behavior: reduceMotion() ? "auto" : "smooth", block: "start"}); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); } return; }
   const id = route().slice(5);

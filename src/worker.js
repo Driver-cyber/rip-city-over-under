@@ -102,7 +102,7 @@ async function api(req, env, url) {
   if ((hit = path.match(/^\/api\/picks\/(\d+)$/)) && m === "PUT") {
     const g = await getGame(env, hit[1]);
     if (!g.questions?.length) throw new HttpError(409, "Lines for this game aren't posted yet.");
-    if (Date.now() >= Date.parse(g.tip)) throw new HttpError(409, "Picks are locked. The game has started.");
+    if (!picksOpen(g)) throw new HttpError(409, "Picks are locked. The game has started.");
     const b = await body();
     const winner = b.winner === "POR" || b.winner === g.opp ? b.winner : null;
     const kinds = Object.fromEntries(g.questions.map(q => [q.id, qKind(q)]));
@@ -121,7 +121,7 @@ async function api(req, env, url) {
     if (!who.admin) throw new HttpError(403, "Only the commissioner can do that.");
     if ((hit = path.match(/^\/api\/admin\/lines\/(\d+)$/)) && m === "PUT") {
       const g = await getGame(env, hit[1]);
-      if (Date.now() >= Date.parse(g.tip)) throw new HttpError(409, "The game has started, so the lines are locked.");
+      if (!picksOpen(g)) throw new HttpError(409, "The game has started, so the lines are locked.");
       const qs = cleanQuestions((await body()).questions, g.opp);
       if (!qs.length) throw new HttpError(400, "Add at least one complete question.");
       const changed = new Set(changedQuestionIds(g.questions, qs));
@@ -142,7 +142,7 @@ async function api(req, env, url) {
     }
     if ((hit = path.match(/^\/api\/admin\/autolines\/(\d+)$/)) && m === "POST") {
       const g = await getGame(env, hit[1]);
-      if (Date.now() >= Date.parse(g.tip)) throw new HttpError(409, "The game has started, so the lines are locked.");
+      if (!picksOpen(g)) throw new HttpError(409, "The game has started, so the lines are locked.");
       const log = [];
       const stat = await statLines(g, log);
       if (!stat) throw new HttpError(502, log.join(" ") || "Couldn't build lines from ESPN right now.");
@@ -162,6 +162,7 @@ async function api(req, env, url) {
     if ((hit = path.match(/^\/api\/admin\/final\/(\d+)$/)) && m === "PUT") {
       const g = await getGame(env, hit[1]);
       if (Date.now() < Date.parse(g.tip)) throw new HttpError(409, "The game hasn't started yet.");
+      if (picksOpen(g)) throw new HttpError(409, "Picks are open again. Close them before grading.");
       const f = (await body()).final || {};
       // ESPN fills in the player stats after the final buzzer; until it has,
       // a missing stat means "not in yet", not "didn't play".
@@ -182,6 +183,15 @@ async function api(req, env, url) {
       await env.DB.prepare("UPDATE games SET final = ?, updated_at = ? WHERE id = ?").bind(JSON.stringify(final), now(), g.id).run();
       return json({ ok: true });
     }
+    // Reopen picks after tip-off (watching on DVR), or close them again.
+    if ((hit = path.match(/^\/api\/admin\/open\/(\d+)$/)) && m === "PUT") {
+      const g = await getGame(env, hit[1]);
+      const open = !!(await body()).open;
+      if (Date.now() < Date.parse(g.tip)) throw new HttpError(409, "Picks are already open until tip-off.");
+      if (open && g.final?.winner) throw new HttpError(409, "This game is graded, so picks stay closed.");
+      await env.DB.prepare("UPDATE games SET reopened = ?, updated_at = ? WHERE id = ?").bind(open ? 1 : 0, now(), g.id).run();
+      return json({ ok: true });
+    }
     if (path === "/api/admin/sync" && m === "POST") return json({ log: await sync(env) });
   }
   throw new HttpError(404, "Not found.");
@@ -191,15 +201,19 @@ const rowToGame = r => ({
   id: r.id, tip: r.tip, home: !!r.home, opp: r.opp, oppName: r.opp_name,
   questions: r.questions ? JSON.parse(r.questions) : null,
   final: r.final ? JSON.parse(r.final) : null,
+  reopened: !!r.reopened,
 });
+// Open until tip-off, or after it while the commissioner has reopened picks
+// and the game isn't graded yet (grading closes them for good).
+const picksOpen = g => Date.now() < Date.parse(g.tip) || (g.reopened && !g.final?.winner);
 async function getGame(env, id) {
   const r = await env.DB.prepare("SELECT * FROM games WHERE id = ?").bind(id).first();
   if (!r) throw new HttpError(404, "That game isn't on the schedule.");
   return rowToGame(r);
 }
 
-// Everything the page needs. Other players' picks stay hidden until tip-off;
-// before that the page only learns that they have picked.
+// Everything the page needs. Other players' picks stay hidden while picks are
+// open; until they close the page only learns that they have picked.
 async function state(env, who) {
   const [gs, ps, pk] = await env.DB.batch([
     env.DB.prepare("SELECT * FROM games ORDER BY tip"),
@@ -207,11 +221,11 @@ async function state(env, who) {
     env.DB.prepare("SELECT player_id, game_id, winner, q FROM picks"),
   ]);
   const games = gs.results.map(rowToGame);
-  const tips = Object.fromEntries(games.map(g => [g.id, Date.parse(g.tip)]));
+  const isOpen = Object.fromEntries(games.map(g => [g.id, picksOpen(g)]));
   const t = Date.now();
   const picks = {}, pickedBy = {};
   for (const r of pk.results) {
-    const open = t < tips[r.game_id];
+    const open = !!isOpen[r.game_id];
     if (r.player_id !== who.id && open) { (pickedBy[r.game_id] ||= []).push(r.player_id); continue; }
     (picks[r.player_id] ||= {})[r.game_id] = { winner: r.winner, q: JSON.parse(r.q || "{}") };
   }
